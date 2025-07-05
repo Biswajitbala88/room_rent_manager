@@ -31,6 +31,7 @@ class TenantController extends Controller
             'start_date',
             'rent_amount',
         ]);
+        $data['status'] = 'active'; 
 
         // Handle Aadhaar image file upload
         if ($request->hasFile('aadhaar_image')) {

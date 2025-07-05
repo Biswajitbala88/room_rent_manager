@@ -1,0 +1,24 @@
+/* public/css/custom.css */
+
+.badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-success {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.badge-danger {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.dataTables_wrapper .dataTables_filter input {
+    padding: 6px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+}

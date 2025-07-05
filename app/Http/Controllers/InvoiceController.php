@@ -15,7 +15,24 @@ class InvoiceController extends Controller
      */
     public function index()
     {
-        $invoices = Invoice::with('tenant')->orderBy('created_at', 'desc')->get();
+        $invoices = Invoice::with('tenant')
+            ->orderByDesc('month')
+            ->get();
+
+        $invoices->map(function ($invoice, $index) use ($invoices) {
+            // Find previous invoice for the same tenant
+            $previous = $invoices
+                ->where('tenant_id', $invoice->tenant_id)
+                ->where('month', '<', $invoice->month)
+                ->sortByDesc('month')
+                ->first();
+
+            $prev_units = $previous?->electricity_units ?? 0;
+
+            $invoice->sum_electricity_units = max($invoice->electricity_units - $prev_units, 0);
+            return $invoice;
+        });
+
         return view('invoices.index', compact('invoices'));
     }
 
@@ -36,17 +53,42 @@ class InvoiceController extends Controller
         $validated = $request->validate([
             'tenant_id' => 'required|exists:tenants,id',
             'month' => 'required|date_format:Y-m',
-            'electricity_units' => 'nullable|numeric',
-            'electricity_charge' => 'nullable|numeric',
-            'water_charge' => 'nullable|numeric',
-            'total_amount' => 'required|numeric',
+            'electricity_units' => 'required|numeric',
+            'water_charge' => 'required|numeric',
             'status' => 'required|in:paid,unpaid',
         ]);
 
-        Invoice::create($validated);
+        // Get tenant with rent
+        $tenant = Tenant::findOrFail($validated['tenant_id']);
+
+        // Get last month's invoice for this tenant
+        $lastInvoice = Invoice::where('tenant_id', $tenant->id)
+            ->where('month', '<', $validated['month'])
+            ->orderBy('month', 'desc')
+            ->first();
+
+        $last_units = $lastInvoice?->electricity_units ?? 0;
+
+        $unit_diff = $validated['electricity_units'] - $last_units;
+        $unit_diff = max($unit_diff, 0); // prevent negative value
+
+        $electricity_charge = $unit_diff * 10; // fixed unit price
+
+        $total_amount = $electricity_charge + $validated['water_charge'] + $tenant->rent_amount;
+
+        Invoice::create([
+            'tenant_id' => $validated['tenant_id'],
+            'month' => $validated['month'],
+            'electricity_units' => $validated['electricity_units'],
+            'electricity_charge' => $electricity_charge,
+            'water_charge' => $validated['water_charge'],
+            'total_amount' => $total_amount,
+            'status' => $validated['status'],
+        ]);
 
         return redirect()->route('invoices.index')->with('success', 'Invoice created successfully.');
     }
+
 
     /**
      * Show a single invoice as PDF.
@@ -73,17 +115,43 @@ class InvoiceController extends Controller
         $validated = $request->validate([
             'tenant_id' => 'required|exists:tenants,id',
             'month' => 'required|date_format:Y-m',
-            'electricity_units' => 'nullable|numeric',
-            'electricity_charge' => 'nullable|numeric',
-            'water_charge' => 'nullable|numeric',
-            'total_amount' => 'required|numeric',
+            'electricity_units' => 'required|numeric',
+            'water_charge' => 'required|numeric',
             'status' => 'required|in:paid,unpaid',
         ]);
 
-        $invoice->update($validated);
+        // Get tenant with rent
+        $tenant = Tenant::findOrFail($validated['tenant_id']);
+
+        // Get last month's invoice (excluding the one being updated)
+        $lastInvoice = Invoice::where('tenant_id', $tenant->id)
+            ->where('month', '<', $validated['month'])
+            ->where('id', '!=', $invoice->id) // Exclude current
+            ->orderBy('month', 'desc')
+            ->first();
+
+        $last_units = $lastInvoice?->electricity_units ?? 0;
+
+        $unit_diff = $validated['electricity_units'] - $last_units;
+        $unit_diff = max($unit_diff, 0); // prevent negative
+
+        $electricity_charge = $unit_diff * 10; // ₹10/unit fixed
+        $total_amount = $electricity_charge + $validated['water_charge'] + $tenant->rent_amount;
+
+        $invoice->update([
+            'tenant_id' => $validated['tenant_id'],
+            'month' => $validated['month'],
+            'electricity_units' => $validated['electricity_units'],
+            'electricity_charge' => $electricity_charge,
+            'water_charge' => $validated['water_charge'],
+            'total_amount' => $total_amount,
+            'status' => $validated['status'],
+        ]);
 
         return redirect()->route('invoices.index')->with('success', 'Invoice updated successfully.');
     }
+
+
 
     /**
      * Delete invoice.
