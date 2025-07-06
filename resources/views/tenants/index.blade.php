@@ -31,6 +31,7 @@
                         <th class="px-4 py-3">Rent</th>
                         <th class="px-4 py-3">Aadhaar</th>
                         <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">Include Water Charge</th>
                         <th class="px-4 py-3">Actions</th>
                     </tr>
                 </thead>
@@ -44,8 +45,14 @@
                             <td class="px-4 py-2">{{ $tenant->start_date }}</td>
                             <td class="px-4 py-2">{{ $tenant->rent_amount }}</td>
                             <td class="px-4 py-2">
-                                @if ($tenant->aadhaar_image)
-                                    <img src="{{ asset('storage/' . $tenant->aadhaar_image) }}" class="w-10 h-10 object-cover rounded" />
+                                @php
+                                    $aadhaarImages = json_decode($tenant->aadhaar_image, true);
+                                @endphp
+
+                                @if (!empty($aadhaarImages) && is_array($aadhaarImages))
+                                    @foreach ($aadhaarImages as $imgPath)
+                                        <img src="{{ asset('storage/' . $imgPath) }}" class="w-10 h-10 object-cover rounded inline-block mr-1 mb-1" />
+                                    @endforeach
                                 @else
                                     N/A
                                 @endif
@@ -61,6 +68,12 @@
                                     </span>
                                 @endif
                             </td>
+                            <td class="px-4 py-2">
+                                @if($tenant->is_water_charge)
+                                    <span class="inline-block px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">Yes</span>
+                                @else
+                                    <span class="inline-block px-2 py-1 text-xs font-semibold text-red-800 bg-red-100 rounded-full">No</span>
+                                @endif
                             <td class="px-4 py-2 space-x-2">
                                 <a href="{{ route('tenants.edit', $tenant) }}" class="text-blue-600 hover:underline">Edit</a>
                                 <form action="{{ route('tenants.destroy', $tenant) }}" method="POST" class="inline"

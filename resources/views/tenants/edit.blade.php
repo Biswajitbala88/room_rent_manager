@@ -51,12 +51,21 @@
                     <!-- Aadhaar Image -->
                     <div class="mb-4">
                         <label class="block text-gray-700 font-bold mb-2">Aadhaar Image</label>
-                        <input type="file" name="aadhaar_image" accept="image/*" class="shadow appearance-none border rounded w-full py-2 px-3">
-                        @if(isset($tenant) && $tenant->aadhaar_image)
-                            <div class="mt-2">
-                                <img src="{{ asset('storage/' . $tenant->aadhaar_image) }}" width="120" alt="Aadhaar Image">
-                            </div>
-                        @endif
+                        <input type="file" name="aadhaar_image[]" multiple accept="image/*" class="shadow appearance-none border rounded w-full py-2 px-3">
+                        
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            @php
+                                $aadhaarImages = json_decode($tenant->aadhaar_image, true);
+                            @endphp
+
+                            @if (!empty($aadhaarImages) && is_array($aadhaarImages))
+                                @foreach ($aadhaarImages as $imgPath)
+                                    <img src="{{ asset('storage/' . $imgPath) }}" width="60" class="rounded border" alt="Aadhaar Image" />
+                                @endforeach
+                            @else
+                                <span class="text-gray-500">N/A</span>
+                            @endif
+                        </div>
                     </div>
 
                     <!-- Status -->
@@ -66,6 +75,12 @@
                             <option value="active" {{ $tenant->status === 'active' ? 'selected' : '' }}>Active</option>
                             <option value="close" {{ $tenant->status === 'close' ? 'selected' : '' }}>Close</option>
                         </select>
+                    </div>
+
+                    <!-- Is Water Charge Checkbox -->
+                    <div class="mb-6 flex items-center">
+                        <input type="checkbox" name="is_water_charge" id="is_water_charge" class="mr-2 leading-tight" value="1" {{ isset($tenant) && $tenant->is_water_charge ? 'checked' : '' }}>
+                        <label for="is_water_charge" class="text-gray-700 font-bold">Include Water Charge</label>
                     </div>
 
                     <!-- Buttons -->

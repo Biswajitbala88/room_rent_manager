@@ -44,8 +44,14 @@
                     <!-- Aadhaar Image -->
                     <div class="mb-4">
                         <label class="block text-gray-700 font-bold mb-2">Aadhaar Image</label>
-                        <input type="file" name="aadhaar_image" accept="image/*"
+                        <input type="file" name="aadhaar_image[]" multiple accept="image/*"
                             class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    </div>
+
+                    <!-- Is Water Charge Checkbox -->
+                    <div class="mb-6 flex items-center">
+                        <input type="checkbox" name="is_water_charge" id="is_water_charge" class="mr-2 leading-tight">
+                        <label for="is_water_charge" class="text-gray-700 font-bold">Include Water Charge</label>
                     </div>
 
                     <!-- Buttons -->

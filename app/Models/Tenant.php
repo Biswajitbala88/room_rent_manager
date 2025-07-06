@@ -17,6 +17,7 @@ class Tenant extends Model
         'rent_amount',
         'aadhaar_image',
         'status',
+        'is_water_charge',
     ];
 
     public function invoices()

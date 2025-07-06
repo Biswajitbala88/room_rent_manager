@@ -15,6 +15,7 @@ class Invoice extends Model
         'water_charge',
         'total_amount',
         'status',
+        'received_amount',
     ];
 
 
