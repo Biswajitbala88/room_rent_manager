@@ -229,4 +229,32 @@ class InvoiceController extends Controller
         return $pdf->download($filename);
     }
 
+    public function getDueInvoices($id)
+    {
+        $invoices = Invoice::where('tenant_id', $id)
+        ->whereColumn('received_amount', '<', 'total_amount')
+        ->get(['id', 'month', 'total_amount', 'received_amount'])
+        ->map(function ($invoice) {
+            $invoice->month = \Carbon\Carbon::parse($invoice->month)->format('Y-F');
+            return $invoice;
+        });
+        return response()->json($invoices);
+    }
+    public function addPayment(Request $request, $id)
+    {
+        $invoice = Invoice::findOrFail($id);
+
+        $amountToAdd = $request->input('amount', 0);
+
+        $invoice->received_amount += $amountToAdd;
+        $invoice->save();
+
+        return response()->json([
+            'success' => true,
+            'new_received' => $invoice->received_amount,
+            'new_due' => $invoice->total_amount - $invoice->received_amount,
+        ]);
+    }
+
+
 }

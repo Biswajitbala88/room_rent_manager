@@ -40,7 +40,11 @@
                         <tr class="border-b">
                             <td class="px-4 py-2">{{ $key + 1 }}</td>
                             <td class="px-4 py-2">{{ $tenant->name }}</td>
-                            <td class="px-4 py-2">{{ $tenant->room_no }}</td>
+                            <td class="px-4 py-2">
+                                <span class="inline-block px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">
+                                   Room-{{ $tenant->room_no }}
+                                </span>
+                            </td>
                             <td class="px-4 py-2">{{ $tenant->phone }}</td>
                             <td class="px-4 py-2">{{ $tenant->start_date }}</td>
                             <td class="px-4 py-2">{{ $tenant->rent_amount }}</td>

@@ -4,42 +4,34 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Invoice;
+use App\Models\Tenant;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    public function index2()
+    
+    public function index()
     {
-        return view('dashboard');
-    }
-    public function index(Request $request)
-    {
-        $roomNo = $request->room_no;
+        $currentMonth = Carbon::now()->format('Y-m'); // "2025-07"
 
-        $invoices = Invoice::whereHas('tenant', function ($q) use ($roomNo) {
-            $q->where('room_no', $roomNo);
-        })->where('status', 'unpaid')->get();
+        // Monthly summary
+        $totalPendingInvoices = Invoice::whereColumn('received_amount', '<', 'total_amount')
+            ->get();
 
-        return view('dashboard', compact('invoices'));
-    }
+        $totalDueAmount = Invoice::sum(DB::raw('total_amount - received_amount'));
 
-    public function savePayments(Request $request)
-    {
-        $receivedAmounts = $request->input('received_amounts', []);
+        $totalReceivedAmount = Invoice::sum('received_amount');
 
-        foreach ($receivedAmounts as $invoiceId => $received) {
-            $invoice = Invoice::find($invoiceId);
-            if ($invoice) {
-                $invoice->received_amount = $received;
-                $invoice->save();
+        // Tenants for the dropdown
+        $tenants = Tenant::all();
 
-                PaymentHistory::create([
-                    'invoice_id' => $invoice->id,
-                    'received_amount' => $received,
-                ]);
-            }
-        }
-
-        return redirect()->back()->with('success', 'Payments saved successfully.');
+        return view('dashboard', compact(
+            'tenants',
+            'totalPendingInvoices',
+            'totalDueAmount',
+            'totalReceivedAmount'
+        ));
     }
 
 }

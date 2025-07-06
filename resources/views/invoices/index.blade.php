@@ -47,7 +47,7 @@
                                 </span>
                             </td>
                             <td class="px-4 py-2">{{ $invoice->tenant->name }}</td>
-                            <td class="px-4 py-2">{{ $invoice->month }}</td>
+                            <td>{{ \Carbon\Carbon::parse($invoice->month)->format('F Y') }}</td>
                             <td class="px-4 py-2">{{ $invoice->electricity_units }}</td>
                             <td class="px-4 py-2">{{ $invoice->sum_electricity_units }}</td>
                             <td class="px-4 py-2">₹{{ number_format($invoice->electricity_charge, 2) }}</td>
