@@ -217,12 +217,16 @@ class InvoiceController extends Controller
         $invoice->electricity_rate = $electricityRate;
 
         // Remove debug
-        // echo '<pre>'; print_r($invoice); exit;
+        $nameSlug = strtolower(str_replace(' ', '_', $invoice->tenant->name));
+        $filenameSlug = "{$nameSlug}_{$invoice->month}.pdf";
+        
+        
+        $filename = "Invoice_{$filenameSlug}";
 
         // Load and download PDF
         // return view('invoices.invoice', compact('invoice', 'invoice'));exit;
         $pdf = Pdf::loadView('invoices.invoice', compact('invoice'));
-        return $pdf->download("Invoice_{$invoice->id}.pdf");
+        return $pdf->download($filename);
     }
 
 }
