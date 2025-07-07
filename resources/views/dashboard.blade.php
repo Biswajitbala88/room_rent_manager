@@ -30,7 +30,7 @@
                         <select id="tenant_select" class="w-full border rounded px-3 py-2">
                             <option value="">Select Tenant</option>
                             @foreach ($tenants as $tenant)
-                                <option value="{{ $tenant->id }}">{{ $tenant->name }} (Room: {{ $tenant->room_no }})</option>
+                                <option value="{{ $tenant->id }}">{{ $tenant->name }} (Room: {{ $tenant->room_no }}) Total Due Invoice: {{$tenant->due_invoice_count}}</option>
                             @endforeach
                         </select>
                     </div>
@@ -89,6 +89,7 @@ document.getElementById('tenant_select').addEventListener('change', function () 
                             <td class="border px-4 py-2">
                                 <input type="number" class="border px-2 py-1 w-24" id="payment_${invoice.id}" placeholder="0">
                                 <button class="bg-green-500 text-white px-3 py-1 ml-2 rounded" onclick="submitPayment(${invoice.id})">Save</button>
+                                <a href="/invoices/${invoice.id}/download" class="text-indigo-600 hover:underline ms-4">PDF</a>
                             </td>
                         </tr>`;
                 });

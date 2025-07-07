@@ -45,7 +45,7 @@ p {
             <td>Monthly Rent</td>
             <td>₹{{ number_format($invoice->tenant->rent_amount, 2) }}</td>
         </tr>
-       
+        @if ($invoice->currentUnit > 0)
         <tr>
             <td>
                 Electricity Usage: {{ $invoice->electricity_display }} units
@@ -56,6 +56,7 @@ p {
             </td>
             <td>₹{{ number_format($invoice->electricity_charge, 2) }}</td>
         </tr>
+        @endif
 
 
         @if($invoice->tenant->is_water_charge == 1)

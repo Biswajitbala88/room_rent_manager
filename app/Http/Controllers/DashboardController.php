@@ -26,6 +26,12 @@ class DashboardController extends Controller
         // Tenants for the dropdown
         $tenants = Tenant::all();
 
+        foreach ($tenants as $tenant) {
+            $tenant->due_invoice_count = Invoice::where('tenant_id', $tenant->id)
+                ->whereColumn('received_amount', '<', 'total_amount')
+                ->count();
+        }
+
         return view('dashboard', compact(
             'tenants',
             'totalPendingInvoices',

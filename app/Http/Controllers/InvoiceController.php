@@ -18,21 +18,26 @@ class InvoiceController extends Controller
     public function index()
     {
         $invoices = Invoice::with('tenant')
+            // ->where('tenant_id', 5)
             ->orderByDesc('month')
             ->get();
+// echo '<pre>'; print_r($invoices->toArray()); exit;
 
         $invoices->map(function ($invoice, $index) use ($invoices) {
             // Find previous invoice for the same tenant
+// echo '<pre>'; print_r($invoice->tenant_id); exit;
+
             $previous = $invoices
                 ->where('tenant_id', $invoice->tenant_id)
                 ->where('month', '<', $invoice->month)
+                ->where('electricity_units', '>', 0)
                 ->sortByDesc('month')
                 ->first();
+            // echo '<pre>'; print_r($previous->toArray()); exit;
 
             $prev_units = $previous?->electricity_units ?? 0;
 
             $invoice->sum_electricity_units = max($invoice->electricity_units - $prev_units, 0);
-            // echo '<pre>'; print_r($invoice); exit;
             return $invoice;
         });
 
@@ -89,7 +94,8 @@ class InvoiceController extends Controller
     {
         $lastInvoice = Invoice::where('tenant_id', $tenant_id)
             ->where('month', '<', $month)
-            ->orderBy('month', 'desc')
+            ->where('electricity_units', '>', 0)
+            ->orderBy('month', 'desc') 
             ->first();
 
         return response()->json([
@@ -136,6 +142,7 @@ class InvoiceController extends Controller
         $lastInvoice = Invoice::where('tenant_id', $tenant->id)
             ->where('month', '<', $validated['month'])
             ->where('id', '!=', $invoice->id) // Exclude current
+            ->where('electricity_units', '>', 0)
             ->orderBy('month', 'desc')
             ->first();
 
@@ -195,10 +202,11 @@ class InvoiceController extends Controller
     {
         // Current reading from the invoice
         $currentUnit = (int) $invoice->electricity_units;
-
+        $invoice->currentUnit = $currentUnit;
         // Fetch the previous invoice for the same tenant
         $lastInvoice = Invoice::where('tenant_id', $invoice->tenant_id)
             ->where('month', '<', $invoice->month)
+            ->where('electricity_units', '>', 0)
             ->orderBy('month', 'desc')
             ->first();
 
