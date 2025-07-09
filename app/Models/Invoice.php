@@ -23,4 +23,14 @@ class Invoice extends Model
     {
         return $this->belongsTo(Tenant::class);
     }
+    
+    public function scopeOfUser($query, $userId = null)
+    {
+        $userId = $userId ?? auth()->id();
+
+        return $query->whereHas('tenant', function ($q) use ($userId) {
+            $q->where('parent_id', $userId);
+        });
+    }
+
 }

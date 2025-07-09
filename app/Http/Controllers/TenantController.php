@@ -9,10 +9,7 @@ class TenantController extends Controller
 {
     public function index()
     {
-        $user_id = auth()->user()->id;
-        // echo '<pre>'; print_r($user_id); exit;
-        $tenants = Tenant::where('parent_id', $user_id)->paginate(10);
-        // echo '<pre>'; print_r($tenants->toArray()); exit;
+        $tenants = Tenant::ofUser()->paginate(10);
         return view('tenants.index', compact('tenants'));
     }
 

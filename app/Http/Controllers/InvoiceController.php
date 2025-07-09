@@ -19,15 +19,13 @@ class InvoiceController extends Controller
     {
         $user_id = auth()->user()->id;
         $invoices = Invoice::with('tenant')
-            ->whereHas('tenant', function ($query) use ($user_id) {
-                $query->where('parent_id', $user_id);
+            ->whereHas('tenant', function ($query) {
+                $query->ofUser();
             })
             ->orderByDesc('month')
             ->get();
 
         $invoices->map(function ($invoice, $index) use ($invoices) {
-            // Find previous invoice for the same tenant
-// echo '<pre>'; print_r($invoice->tenant_id); exit;
 
             $previous = $invoices
                 ->where('tenant_id', $invoice->tenant_id)
@@ -35,7 +33,6 @@ class InvoiceController extends Controller
                 ->where('electricity_units', '>', 0)
                 ->sortByDesc('month')
                 ->first();
-            // echo '<pre>'; print_r($previous->toArray()); exit;
 
             $prev_units = $previous?->electricity_units ?? 0;
 
@@ -51,7 +48,7 @@ class InvoiceController extends Controller
      */
     public function create()
     {
-        $tenants = Tenant::all();
+        $tenants = Tenant::ofUser()->get();
         return view('invoices.create', compact('tenants'));
     }
 
@@ -119,7 +116,7 @@ class InvoiceController extends Controller
      */
     public function edit(Invoice $invoice)
     {
-        $tenants = Tenant::all();
+        $tenants = Tenant::ofUser()->get();
         return view('invoices.edit', compact('invoice', 'tenants'));
     }
 
@@ -168,25 +165,6 @@ class InvoiceController extends Controller
 
         return redirect()->route('invoices.index')->with('success', 'Invoice updated successfully.');
     }
-    
-
-    // public function getLastUnits(Request $request)
-    // {
-    //     $tenantId = $request->query('tenant_id');
-    //     $month = $request->query('month');
-
-    //     $last = DB::table('invoices')
-    //         ->where('tenant_id', $tenantId)
-    //         ->where('month', '<', $month)
-    //         ->orderBy('month', 'desc')
-    //         ->first();
-
-    //     return response()->json([
-    //         'last_units' => $last->electricity_units ?? 0,
-    //     ]);
-    // }
-
-
 
     /**
      * Delete invoice.

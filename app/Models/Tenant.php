@@ -26,4 +26,9 @@ class Tenant extends Model
         return $this->hasMany(Invoice::class);
     }
 
+    public function scopeOfUser($query, $userId = null)
+    {
+        return $query->where('parent_id', $userId ?? auth()->id());
+    }
+
 }

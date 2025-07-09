@@ -10,7 +10,7 @@
         <div>
             <x-input-label for="password" :value="__('Password')" />
 
-            <x-text-input id="password" class="block mt-1 w-full"
+            <x-text-input id="password" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                             type="password"
                             name="password"
                             required autocomplete="current-password" />

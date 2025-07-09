@@ -79,7 +79,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="text-center py-4 text-gray-500">No invoices found.</td>
+                            <td colspan="12" class="text-center py-4 text-gray-500">No invoices found.</td>
                         </tr>
                     @endforelse
                 </tbody>
