@@ -17,11 +17,13 @@ class InvoiceController extends Controller
      */
     public function index()
     {
+        $user_id = auth()->user()->id;
         $invoices = Invoice::with('tenant')
-            // ->where('tenant_id', 5)
+            ->whereHas('tenant', function ($query) use ($user_id) {
+                $query->where('parent_id', $user_id);
+            })
             ->orderByDesc('month')
             ->get();
-// echo '<pre>'; print_r($invoices->toArray()); exit;
 
         $invoices->map(function ($invoice, $index) use ($invoices) {
             // Find previous invoice for the same tenant

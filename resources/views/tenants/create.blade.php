@@ -56,6 +56,7 @@
 
                     <!-- Buttons -->
                     <div class="flex items-center justify-between">
+                        <input type="hidden" name="parent_id" value="{{ auth()->user()->id }}">
                         <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="submit">
                             Save
                         </button>

@@ -9,8 +9,10 @@ class TenantController extends Controller
 {
     public function index()
     {
-        $tenants = Tenant::paginate(10);
-        // echo '<pre>'; print_r($tenants); exit;
+        $user_id = auth()->user()->id;
+        // echo '<pre>'; print_r($user_id); exit;
+        $tenants = Tenant::where('parent_id', $user_id)->paginate(10);
+        // echo '<pre>'; print_r($tenants->toArray()); exit;
         return view('tenants.index', compact('tenants'));
     }
 
@@ -31,6 +33,7 @@ class TenantController extends Controller
             'start_date',
             'rent_amount',
             'is_water_charge',
+            'parent_id',
         ]);
         $data['status'] = 'active'; 
         $data['is_water_charge'] = $request->has('is_water_charge') ? 1 : 0; 
@@ -85,6 +88,7 @@ class TenantController extends Controller
             'rent_amount',
             'status',
             'is_water_charge',
+            'parent_id',
         ]);
 
         $data['is_water_charge'] = $request->has('is_water_charge') ? 1 : 0;
