@@ -38,6 +38,15 @@
 
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
         </div>
+        <!-- User Type -->
+        <div class="mt-4">
+            <x-input-label for="user_type" :value="__('User Type')" />
+            <select id="user_type" name="user_type" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                <option value="A" >{{ __('Admin') }}</option>
+                <option value="SA">{{ __('Super Admin') }}</option>
+            </select>   
+            <x-input-error :messages="$errors->get('user_type')" class="mt-2" />
+        </div>
 
         <div class="flex items-center justify-end mt-4">
             <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 me-4" href="{{ route('login') }}">
@@ -46,7 +55,7 @@
             <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('login') }}">
                 {{ __('Already registered?') }}
             </a>
-
+            
             <x-primary-button class="ms-4">
                 {{ __('Register') }}
             </x-primary-button>

@@ -26,7 +26,13 @@ class Invoice extends Model
     
     public function scopeOfUser($query, $userId = null)
     {
-        $userId = $userId ?? auth()->id();
+        $user = auth()->user();
+
+        if ($user->user_type === 'SA') {
+            return $query;
+        }
+
+        $userId = $userId ?? $user->id;
 
         return $query->whereHas('tenant', function ($q) use ($userId) {
             $q->where('parent_id', $userId);

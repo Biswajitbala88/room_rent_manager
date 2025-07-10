@@ -8,12 +8,13 @@ use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
+
 class DashboardController extends Controller
 {
     
     public function index()
     {
-        $currentMonth = Carbon::now()->format('Y-m'); // "2025-07"
+        $currentMonth = Carbon::now()->format('Y-m');
 
         // Monthly summary
         $totalPendingInvoices = Invoice::ofUser()
@@ -27,7 +28,7 @@ class DashboardController extends Controller
             ->sum('received_amount');
 
         // Tenants for the dropdown
-        $tenants = Tenant::ofUser()->get(); // ✅ Fix here
+        $tenants = Tenant::ofUser()->get();
 
         foreach ($tenants as $tenant) {
             $tenant->due_invoice_count = Invoice::where('tenant_id', $tenant->id)

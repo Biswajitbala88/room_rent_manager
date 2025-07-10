@@ -10,6 +10,7 @@ class TenantController extends Controller
     public function index()
     {
         $tenants = Tenant::ofUser()->paginate(10);
+        // echo '<pre>'; print_r($tenants->toArray()); exit;
         return view('tenants.index', compact('tenants'));
     }
 
