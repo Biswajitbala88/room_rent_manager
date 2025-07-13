@@ -22,6 +22,8 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
 Route::post('/dashboard/monthly-summary', [DashboardController::class, 'monthlySummary']);
 
 Route::post('/dashboard/save-payments', [DashboardController::class, 'savePayments'])->name('dashboard.save-payments');
+Route::get('/dashboard-summary', [DashboardController::class, 'getDashboardSummary']);
+
 
 
 Route::middleware('auth')->group(function () {

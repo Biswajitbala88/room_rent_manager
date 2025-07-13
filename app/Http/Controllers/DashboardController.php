@@ -13,17 +13,15 @@ class DashboardController extends Controller
     
     public function index()
     {
-        $currentMonth = Carbon::now()->format('Y-m'); // "2025-07"
+        // Current month
+        $currentMonth = Carbon::now()->format('Y-m');
 
-        // Monthly summary
-        $totalPendingInvoices = Invoice::whereColumn('received_amount', '<', 'total_amount')
-            ->get();
+        // Set default values to prevent null errors
+        $totalPendingInvoices = collect(); // empty collection
+        $totalDueAmount = 0;
+        $totalReceivedAmount = 0;
 
-        $totalDueAmount = Invoice::sum(DB::raw('total_amount - received_amount'));
-
-        $totalReceivedAmount = Invoice::sum('received_amount');
-
-        // Tenants for the dropdown
+        // Tenants list for dropdown
         $tenants = Tenant::all();
 
         foreach ($tenants as $tenant) {
@@ -33,11 +31,33 @@ class DashboardController extends Controller
         }
 
         return view('dashboard', compact(
-            'tenants',
+            'currentMonth',
             'totalPendingInvoices',
             'totalDueAmount',
-            'totalReceivedAmount'
+            'totalReceivedAmount',
+            'tenants'
         ));
+    }
+
+
+    public function getDashboardSummary(Request $request)
+    {
+        $month = $request->input('month'); // format: 2025-07
+        $query = Invoice::query();
+
+        if ($month) {
+            $query->where('month', $month);
+        }
+
+        $totalPendingInvoices = $query->whereColumn('received_amount', '<', 'total_amount')->get();
+        $totalDueAmount = $query->sum(DB::raw('total_amount - received_amount'));
+        $totalReceivedAmount = $query->sum('received_amount');
+
+        return response()->json([
+            'totalPendingCount' => count($totalPendingInvoices),
+            'totalDueAmount' => number_format($totalDueAmount, 2),
+            'totalReceivedAmount' => number_format($totalReceivedAmount, 2)
+        ]);
     }
 
 }
