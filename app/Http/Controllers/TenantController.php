@@ -21,9 +21,9 @@ class TenantController extends Controller
 
     public function store(Request $request)
     {
-        // Debug: View submitted form data
-        // echo '<pre>'; print_r($request->all()); exit;
-
+        $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
         $data = $request->only([
             'name',
             'phone',
@@ -36,10 +36,9 @@ class TenantController extends Controller
         $data['status'] = 'active'; 
         $data['is_water_charge'] = $request->has('is_water_charge') ? 1 : 0; 
 
-        // Handle Aadhaar image file upload
-        // if ($request->hasFile('aadhaar_image')) {
-        //     $data['aadhaar_image'] = $request->file('aadhaar_image')->store('aadhaar', 'public');
-        // }
+        if (Tenant::room_availability($data['room_no'])) {
+            return redirect()->back()->with('error', 'Room number is already occupied.');
+        }
 
         $photoPaths = [];
 
@@ -91,6 +90,10 @@ class TenantController extends Controller
 
         $data['is_water_charge'] = $request->has('is_water_charge') ? 1 : 0;
 
+        if (Tenant::room_availability($data['room_no'], $id)) {
+            return redirect()->back()->with('error', 'Room number is already occupied.');
+        }
+
         // Handle multiple Aadhaar images if uploaded
         if ($request->hasFile('aadhaar_image')) {
             $photoPaths = [];
@@ -107,6 +110,7 @@ class TenantController extends Controller
 
             $data['aadhaar_image'] = json_encode($photoPaths);
         }
+        // echo '<pre>'; print_r($data); exit;
 
         $tenant->update($data);
 

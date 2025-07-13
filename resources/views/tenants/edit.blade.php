@@ -8,6 +8,11 @@
     <div class="py-12">
         <div class="max-w-xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+                @if (session('error'))
+                    <div class="bg-red-100 text-red-800 px-4 py-2 rounded mb-4">
+                        {{ session('error') }}
+                    </div>
+                @endif
                 <form 
                     action="{{ isset($tenant) ? route('tenants.update', $tenant->id) : route('tenants.store') }}" 
                     method="POST" 

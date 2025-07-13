@@ -14,18 +14,13 @@ class DashboardController extends Controller
     
     public function index()
     {
+        // Current month
         $currentMonth = Carbon::now()->format('Y-m');
 
-        // Monthly summary
-        $totalPendingInvoices = Invoice::ofUser()
-            ->whereColumn('received_amount', '<', 'total_amount')
-            ->get();
-
-        $totalDueAmount = Invoice::ofUser()
-            ->sum(DB::raw('total_amount - received_amount'));
-
-        $totalReceivedAmount = Invoice::ofUser()
-            ->sum('received_amount');
+        // Set default values to prevent null errors
+        $totalPendingInvoices = collect(); // empty collection
+        $totalDueAmount = 0;
+        $totalReceivedAmount = 0;
 
         // Tenants for the dropdown
         $tenants = Tenant::ofUser()->get();
@@ -37,12 +32,48 @@ class DashboardController extends Controller
         }
 
         return view('dashboard', compact(
-            'tenants',
+            'currentMonth',
             'totalPendingInvoices',
             'totalDueAmount',
-            'totalReceivedAmount'
+            'totalReceivedAmount',
+            'tenants'
         ));
     }
+
+
+    public function getDashboardSummary(Request $request)
+    {
+        $month = $request->input('month'); // format: 2025-07
+
+        // Base query with optional month filter
+        $baseQuery = Invoice::query();
+        if ($month) {
+            $baseQuery->where('month', $month);
+        }
+
+        // Clone base query for each metric
+        $pendingInvoicesQuery = clone $baseQuery;
+        $dueAmountQuery = clone $baseQuery;
+        $receivedAmountQuery = clone $baseQuery;
+
+        // Calculate values
+        $totalPendingInvoices = $pendingInvoicesQuery
+            ->whereColumn('received_amount', '<', 'total_amount')
+            ->get();
+
+        $totalDueAmount = $dueAmountQuery
+            ->sum(DB::raw('total_amount - received_amount'));
+
+        $totalReceivedAmount = $receivedAmountQuery
+            ->sum('received_amount');
+
+        return response()->json([
+            'totalPendingCount' => $totalPendingInvoices->count(),
+            'totalDueAmount' => number_format($totalDueAmount, 2),
+            'totalReceivedAmount' => number_format($totalReceivedAmount, 2)
+        ]);
+    }
+
 
 
 }

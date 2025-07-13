@@ -9,19 +9,23 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-bold mb-2">Filter with month</label>
+                        <input type="month" name="filter_month" id="filter_month" required class="w-full border rounded px-3 py-2">
+                    </div>
                     <!-- Summary Counter Boxes -->
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                         <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4">
                             <div class="text-sm font-bold">Total Pending Invoices</div>
-                            <div class="text-2xl font-semibold">{{ count($totalPendingInvoices) }}</div>
+                            <div class="text-2xl font-semibold pending-count">{{ $totalPendingInvoices ? count($totalPendingInvoices) : 0 }}</div>
                         </div>
                         <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4">
                             <div class="text-sm font-bold">Total Due Amount (₹)</div>
-                            <div class="text-2xl font-semibold">₹{{ number_format($totalDueAmount, 2) }}</div>
+                            <div class="text-2xl font-semibold due-amount">₹{{ $totalDueAmount ? number_format($totalDueAmount, 2) : 0 }}</div>
                         </div>
                         <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4">
                             <div class="text-sm font-bold">Total Received Amount (₹)</div>
-                            <div class="text-2xl font-semibold">₹{{ number_format($totalReceivedAmount, 2) }}</div>
+                            <div class="text-2xl font-semibold received-amount">₹{{ $totalReceivedAmount ? number_format($totalReceivedAmount, 2) : 0 }}</div>
                         </div>
                     </div>
                     <!-- Dropdown -->
@@ -131,6 +135,30 @@ function submitPayment(invoiceId) {
     })
     .catch(err => console.error(err));
 }
+
+function loadSummary(month) {
+    fetch(`/dashboard-summary?month=${month}`)
+        .then(response => response.json())
+        .then(data => {
+            document.querySelector('.pending-count').innerText = data.totalPendingCount;
+            document.querySelector('.due-amount').innerText = `₹${data.totalDueAmount}`;
+            document.querySelector('.received-amount').innerText = `₹${data.totalReceivedAmount}`;
+        });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Set default month to current
+    const today = new Date();
+    const currentMonth = today.toISOString().slice(0, 7); // format: "YYYY-MM"
+    document.getElementById('filter_month').value = currentMonth;
+
+    // Initial summary load
+    loadSummary(currentMonth);
+});
+
+document.getElementById('filter_month').addEventListener('change', function () {
+    loadSummary(this.value);
+});
 
 </script>
 
