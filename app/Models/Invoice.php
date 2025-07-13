@@ -23,7 +23,11 @@ class Invoice extends Model
     {
         return $this->belongsTo(Tenant::class);
     }
-    
+    public function parentUser()
+    {
+        return $this->belongsTo(User::class, 'parent_id'); // not Tenant
+    }
+
     public function scopeOfUser($query, $userId = null)
     {
         $user = auth()->user();

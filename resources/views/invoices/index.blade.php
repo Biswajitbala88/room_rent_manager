@@ -34,6 +34,9 @@
                         <th class="px-4 py-3">Total Amount</th>
                         <th class="px-4 py-3">Received Amount</th>
                         <th class="px-4 py-3">Status</th>
+                        @if ( auth()->user()->user_type == 'SA' )
+                        <th class="px-4 py-3">Owner</th>
+                        @endif
                         <th class="px-4 py-3">Actions</th>
                     </tr>
                 </thead>
@@ -65,7 +68,11 @@
                                     </span>
                                 @endif
                             </td>
-                            
+                            @if ( auth()->user()->user_type == 'SA' )
+                            <td class="px-4 py-2">
+                                {{ $invoice->tenant->parentUser->name }}
+                            </td>
+                            @endif
                             <td class="px-4 py-2 space-x-2">
                                 <a href="{{ route('invoices.edit', $invoice) }}" class="text-blue-600 hover:underline">Edit</a>
                                 <a href="{{ route('invoices.download', $invoice) }}" class="text-indigo-600 hover:underline">PDF</a>

@@ -38,27 +38,27 @@ class Tenant extends Model
     }
 
     public function parentUser()
-{
-    return $this->belongsTo(User::class, 'parent_id'); // not Tenant
-}
+    {
+        return $this->belongsTo(User::class, 'parent_id'); // not Tenant
+    }
 
     /**
      * Scope to filter tenants based on logged-in user's type.
      */
     public function scopeOfUser($query, $userId = null)
-{
-    $user = auth()->user();
+    {
+        $user = auth()->user();
 
-    // SA (Super Admin) should see all tenants
-    if ($user->user_type === 'SA') {
-        return $query;
+        // SA (Super Admin) should see all tenants
+        if ($user->user_type === 'SA') {
+            return $query;
+        }
+
+        $userId = $userId ?? $user->id;
+
+        // A (Admin) users see only their own tenants
+        return $query->where('parent_id', $userId);
     }
-
-    $userId = $userId ?? $user->id;
-
-    // A (Admin) users see only their own tenants
-    return $query->where('parent_id', $userId);
-}
 
 
 }
