@@ -84,7 +84,7 @@
                             </td>
                             @if ( auth()->user()->user_type == 'SA' )
                             <td class="px-4 py-2">
-                                {{ $tenant->parentUser->name }}
+                                {{ $tenant->parentUser->name ?? '' }}
                             </td>
                             @endif
                             <td class="px-4 py-2 space-x-2">

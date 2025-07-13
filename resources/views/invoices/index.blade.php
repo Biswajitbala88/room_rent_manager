@@ -70,7 +70,7 @@
                             </td>
                             @if ( auth()->user()->user_type == 'SA' )
                             <td class="px-4 py-2">
-                                {{ $invoice->tenant->parentUser->name }}
+                                {{ $invoice->tenant->parentUser->name ?? 'N/A' }}
                             </td>
                             @endif
                             <td class="px-4 py-2 space-x-2">
