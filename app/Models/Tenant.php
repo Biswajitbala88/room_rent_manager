@@ -24,5 +24,14 @@ class Tenant extends Model
     {
         return $this->hasMany(Invoice::class);
     }
+    public static function room_availability($room_no, $excludeTenantId = null)
+    {
+        return Tenant::where('room_no', $room_no)
+            ->where('status', 'active')
+            ->when($excludeTenantId, function ($query) use ($excludeTenantId) {
+                $query->where('id', '!=', $excludeTenantId);
+            })
+            ->exists();
+    }
 
 }

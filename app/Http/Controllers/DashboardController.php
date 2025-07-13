@@ -43,21 +43,35 @@ class DashboardController extends Controller
     public function getDashboardSummary(Request $request)
     {
         $month = $request->input('month'); // format: 2025-07
-        $query = Invoice::query();
 
+        // Base query with optional month filter
+        $baseQuery = Invoice::query();
         if ($month) {
-            $query->where('month', $month);
+            $baseQuery->where('month', $month);
         }
 
-        $totalPendingInvoices = $query->whereColumn('received_amount', '<', 'total_amount')->get();
-        $totalDueAmount = $query->sum(DB::raw('total_amount - received_amount'));
-        $totalReceivedAmount = $query->sum('received_amount');
+        // Clone base query for each metric
+        $pendingInvoicesQuery = clone $baseQuery;
+        $dueAmountQuery = clone $baseQuery;
+        $receivedAmountQuery = clone $baseQuery;
+
+        // Calculate values
+        $totalPendingInvoices = $pendingInvoicesQuery
+            ->whereColumn('received_amount', '<', 'total_amount')
+            ->get();
+
+        $totalDueAmount = $dueAmountQuery
+            ->sum(DB::raw('total_amount - received_amount'));
+
+        $totalReceivedAmount = $receivedAmountQuery
+            ->sum('received_amount');
 
         return response()->json([
-            'totalPendingCount' => count($totalPendingInvoices),
+            'totalPendingCount' => $totalPendingInvoices->count(),
             'totalDueAmount' => number_format($totalDueAmount, 2),
             'totalReceivedAmount' => number_format($totalReceivedAmount, 2)
         ]);
     }
+
 
 }
