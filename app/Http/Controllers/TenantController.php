@@ -32,6 +32,7 @@ class TenantController extends Controller
             'rent_amount',
             'is_water_charge',
             'parent_id',
+            'water_charge',
         ]);
         $data['status'] = 'active'; 
         $data['is_water_charge'] = $request->has('is_water_charge') ? 1 : 0; 
@@ -86,10 +87,13 @@ class TenantController extends Controller
             'status',
             'is_water_charge',
             'parent_id',
+            'water_charge',
         ]);
 
         $data['is_water_charge'] = $request->has('is_water_charge') ? 1 : 0;
-
+        if ($data['is_water_charge'] == 0 ){
+            $data['water_charge'] = 0;
+        }
         if (Tenant::room_availability($data['room_no'], $id)) {
             return redirect()->back()->with('error', 'Room number is already occupied.');
         }

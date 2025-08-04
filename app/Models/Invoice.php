@@ -12,7 +12,7 @@ class Invoice extends Model
         'month',
         'electricity_units',
         'electricity_charge',
-        'water_charge',
+        // 'water_charge',
         'total_amount',
         'status',
         'received_amount',

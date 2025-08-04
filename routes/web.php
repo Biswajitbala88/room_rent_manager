@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DBSchemaController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
 
@@ -44,6 +45,7 @@ Route::get('/tenant-last-units/{tenant_id}/{month}', [InvoiceController::class, 
 Route::get('/invoices/last-units', [InvoiceController::class, 'getLastUnits_edit']);
 Route::get('/tenants/{id}/due-invoices', [InvoiceController::class, 'getDueInvoices']);
 Route::post('/invoices/{id}/add-payment', [InvoiceController::class, 'addPayment']);
+Route::get('/database-schema', [DBSchemaController::class, 'index']);
 
 
 

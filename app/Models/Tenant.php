@@ -21,6 +21,7 @@ class Tenant extends Model
         'status',
         'is_water_charge',
         'parent_id',
+        'water_charge',
     ];
 
     public function invoices()

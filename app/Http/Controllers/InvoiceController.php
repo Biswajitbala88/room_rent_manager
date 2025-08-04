@@ -38,7 +38,6 @@ class InvoiceController extends Controller
             $invoice->sum_electricity_units = max($invoice->electricity_units - $prev_units, 0);
             return $invoice;
         });
-
         return view('invoices.index', compact('invoices'));
     }
 
@@ -48,6 +47,7 @@ class InvoiceController extends Controller
     public function create()
     {
         $tenants = Tenant::ofUser()->get();
+        // echo '<pre>'; print_r($tenants); exit;
         return view('invoices.create', compact('tenants'));
     }
 

@@ -54,7 +54,7 @@
                             <td class="px-4 py-2">{{ $invoice->electricity_units }}</td>
                             <td class="px-4 py-2">{{ $invoice->sum_electricity_units }}</td>
                             <td class="px-4 py-2">₹{{ number_format($invoice->electricity_charge, 2) }}</td>
-                            <td class="px-4 py-2">₹{{ number_format($invoice->water_charge, 2) }}</td>
+                            <td class="px-4 py-2">₹{{ number_format($invoice->tenant->water_charge, 2) }}</td>
                             <td class="px-4 py-2 font-semibold text-blue-600">₹{{ number_format($invoice->total_amount, 2) }}</td>
                             <td class="px-4 py-2 font-semibold text-blue-600">₹{{ number_format($invoice->received_amount, 2) }}</td>
                             <td class="px-4 py-2">

@@ -32,6 +32,7 @@
                         <th class="px-4 py-3">Aadhaar</th>
                         <th class="px-4 py-3">Status</th>
                         <th class="px-4 py-3">Include Water Charge</th>
+                        <th class="px-4 py-3">Water Charge</th>
                         @if ( auth()->user()->user_type == 'SA' )
                         <th class="px-4 py-3">Owner</th>
                         @endif
@@ -82,6 +83,7 @@
                                     <span class="inline-block px-2 py-1 text-xs font-semibold text-red-800 bg-red-100 rounded-full">No</span>
                                 @endif
                             </td>
+                            <td class="px-4 py-2">{{ $tenant->water_charge }}</td>
                             @if ( auth()->user()->user_type == 'SA' )
                             <td class="px-4 py-2">
                                 {{ $tenant->parentUser->name ?? '' }}

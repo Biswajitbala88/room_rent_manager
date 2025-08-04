@@ -88,6 +88,12 @@
                         <label for="is_water_charge" class="text-gray-700 font-bold">Include Water Charge</label>
                     </div>
 
+                    <!-- Water Charge -->
+                    <div class="mb-6" id="water_charge_wrapper">
+                        <label class="block text-gray-700 font-bold mb-2">Water Charge</label>
+                        <input type="number" name="water_charge" value="{{ old('water_charge', $tenant->water_charge ?? '') }}" class="shadow appearance-none border rounded w-full py-2 px-3">
+                    </div>
+
                     <!-- Buttons -->
                     <div class="flex items-center justify-between">
                         <input type="hidden" name="parent_id" value="{{ auth()->user()->id }}">
@@ -102,4 +108,26 @@
             </div>
         </div>
     </div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const checkbox = document.getElementById('is_water_charge');
+        const chargeWrapper = document.getElementById('water_charge_wrapper');
+
+        function toggleWaterCharge() {
+            if (checkbox.checked) {
+                chargeWrapper.style.display = 'block';
+            } else {
+                chargeWrapper.style.display = 'none';
+            }
+        }
+
+        // Initial check
+        toggleWaterCharge();
+
+        // On checkbox change
+        checkbox.addEventListener('change', toggleWaterCharge);
+    });
+</script>
 </x-app-layout>
