@@ -8,6 +8,11 @@
     <div class="py-12">
         <div class="max-w-xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+                @if (session('success'))
+                    <div class="bg-green-100 text-green-800 px-4 py-2 rounded mb-4">
+                        {{ session('success') }}
+                    </div>
+                @endif
                 @if (session('error'))
                     <div class="bg-red-100 text-red-800 px-4 py-2 rounded mb-4">
                         {{ session('error') }}
@@ -92,6 +97,12 @@
                     <div class="mb-6" id="water_charge_wrapper">
                         <label class="block text-gray-700 font-bold mb-2">Water Charge</label>
                         <input type="number" name="water_charge" value="{{ old('water_charge', $tenant->water_charge ?? '') }}" class="shadow appearance-none border rounded w-full py-2 px-3">
+                    </div>
+
+                    <!-- Advanced Paid -->
+                    <div class="mb-6 flex items-center">
+                        <input type="checkbox" name="is_advanced" id="is_advanced" class="mr-2 leading-tight" {{ isset($tenant) && $tenant->is_advanced ? 'checked' : '' }}>
+                        <label for="is_advanced" class="text-gray-700 font-bold">Is Advanced Paid</label>
                     </div>
 
                     <!-- Buttons -->

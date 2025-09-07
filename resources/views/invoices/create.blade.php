@@ -32,7 +32,7 @@
                     <!-- Month -->
                     <div class="mb-4">
                         <label class="block font-medium text-sm text-gray-700">Month</label>
-                        <input type="month" name="month" id="month" required class="w-full border rounded px-3 py-2">
+                        <input type="month" name="month" id="month" required class="w-full border rounded px-3 py-2" value="{{ now()->format('Y-m') }}">
                     </div>
 
                     <!-- Electricity Units -->

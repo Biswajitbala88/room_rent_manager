@@ -46,7 +46,7 @@ class InvoiceController extends Controller
      */
     public function create()
     {
-        $tenants = Tenant::ofUser()->get();
+        $tenants = Tenant::where('status', 'active')->ofUser()->get();
         // echo '<pre>'; print_r($tenants); exit;
         return view('invoices.create', compact('tenants'));
     }
