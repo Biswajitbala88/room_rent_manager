@@ -62,7 +62,7 @@ p {
         @if($invoice->tenant->is_water_charge == 1)
         <tr>
             <td>Water Charge</td>
-            <td>₹{{ number_format($invoice->water_charge, 2) }}</td>
+            <td>₹{{ number_format($invoice->tenant->water_charge, 2) }}</td>
         </tr>
         @endif
         <tr>

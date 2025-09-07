@@ -8,6 +8,7 @@ use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
+
 class DashboardController extends Controller
 {
     
@@ -21,8 +22,8 @@ class DashboardController extends Controller
         $totalDueAmount = 0;
         $totalReceivedAmount = 0;
 
-        // Tenants list for dropdown
-        $tenants = Tenant::all();
+        // Tenants for the dropdown
+        $tenants = Tenant::ofUser()->get();
 
         foreach ($tenants as $tenant) {
             $tenant->due_invoice_count = Invoice::where('tenant_id', $tenant->id)
@@ -72,6 +73,7 @@ class DashboardController extends Controller
             'totalReceivedAmount' => number_format($totalReceivedAmount, 2)
         ]);
     }
+
 
 
 }

@@ -34,6 +34,9 @@
                         <th class="px-4 py-3">Total Amount</th>
                         <th class="px-4 py-3">Received Amount</th>
                         <th class="px-4 py-3">Status</th>
+                        @if ( auth()->user()->user_type == 'SA' )
+                        <th class="px-4 py-3">Owner</th>
+                        @endif
                         <th class="px-4 py-3">Actions</th>
                     </tr>
                 </thead>
@@ -51,7 +54,7 @@
                             <td class="px-4 py-2">{{ $invoice->electricity_units }}</td>
                             <td class="px-4 py-2">{{ $invoice->sum_electricity_units }}</td>
                             <td class="px-4 py-2">₹{{ number_format($invoice->electricity_charge, 2) }}</td>
-                            <td class="px-4 py-2">₹{{ number_format($invoice->water_charge, 2) }}</td>
+                            <td class="px-4 py-2">₹{{ number_format($invoice->tenant->water_charge, 2) }}</td>
                             <td class="px-4 py-2 font-semibold text-blue-600">₹{{ number_format($invoice->total_amount, 2) }}</td>
                             <td class="px-4 py-2 font-semibold text-blue-600">₹{{ number_format($invoice->received_amount, 2) }}</td>
                             <td class="px-4 py-2">
@@ -65,7 +68,11 @@
                                     </span>
                                 @endif
                             </td>
-                            
+                            @if ( auth()->user()->user_type == 'SA' )
+                            <td class="px-4 py-2">
+                                {{ $invoice->tenant->parentUser->name ?? 'N/A' }}
+                            </td>
+                            @endif
                             <td class="px-4 py-2 space-x-2">
                                 <a href="{{ route('invoices.edit', $invoice) }}" class="text-blue-600 hover:underline">Edit</a>
                                 <a href="{{ route('invoices.download', $invoice) }}" class="text-indigo-600 hover:underline">PDF</a>
@@ -79,7 +86,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="text-center py-4 text-gray-500">No invoices found.</td>
+                            <td colspan="12" class="text-center py-4 text-gray-500">No invoices found.</td>
                         </tr>
                     @endforelse
                 </tbody>

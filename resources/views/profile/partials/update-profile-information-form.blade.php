@@ -13,6 +13,10 @@
         @csrf
     </form>
 
+    <?php
+        // echo '<pre>'; print_r($user); exit;
+    ?>
+
     <form method="post" action="{{ route('profile.update') }}" class="mt-6 space-y-6">
         @csrf
         @method('patch')
@@ -46,6 +50,15 @@
                 </div>
             @endif
         </div>
+        <div>
+            <x-input-label for="user_type" :value="__('User Type')" />
+            <select id="user_type" name="user_type" class="mt-1 block w-full">
+                <option >{{ __('Select User Type') }}</option>
+                <option value="A" {{ old('user_type', $user->user_type) === 'A' ? 'selected' : '' }}>{{ __('Admin') }}</option>
+                <option value="SA" {{ old('user_type', $user->user_type) === 'SA' ? 'selected' : '' }}>{{ __('Super Admin') }}</option>
+            </select>
+            <x-input-error class="mt-2" :messages="$errors->get('user_type')" />
+        </div>
 
         <div class="flex items-center gap-4">
             <x-primary-button>{{ __('Save') }}</x-primary-button>
@@ -56,7 +69,7 @@
                     x-show="show"
                     x-transition
                     x-init="setTimeout(() => show = false, 2000)"
-                    class="text-sm text-gray-600"
+                    class="text-sm text-green-600"
                 >{{ __('Saved.') }}</p>
             @endif
         </div>

@@ -21,6 +21,7 @@
                                     value="{{ $tenant->id }}" 
                                     data-rent="{{ $tenant->rent_amount }}" 
                                     data-is-water-charge="{{ $tenant->is_water_charge }}"
+                                    data-water-charge="{{ $tenant->water_charge }}"
                                 >
                                     {{ $tenant->name }} (Room: {{ $tenant->room_no }})
                                 </option>
@@ -31,7 +32,7 @@
                     <!-- Month -->
                     <div class="mb-4">
                         <label class="block font-medium text-sm text-gray-700">Month</label>
-                        <input type="month" name="month" id="month" required class="w-full border rounded px-3 py-2">
+                        <input type="month" name="month" id="month" required class="w-full border rounded px-3 py-2" value="{{ now()->format('Y-m') }}">
                     </div>
 
                     <!-- Electricity Units -->
@@ -40,7 +41,10 @@
                         <input type="number" id="electricity_units" name="electricity_units" step="0.01" required class="w-full border rounded px-3 py-2">
                     </div>
 
-                     <!-- Total Amount -->
+                    <!-- Hidden Input to Store Last Units -->
+                    <input type="hidden" id="last_electric_unit" name="last_electric_unit">
+
+                    <!-- Unit Difference -->
                     <div class="mb-6">
                         <label class="block font-medium text-sm text-gray-700">Unit Difference</label>
                         <input type="text" id="unit_diff_display" readonly class="w-full border rounded px-3 py-2 bg-gray-100 font-semibold text-lg">
@@ -55,17 +59,8 @@
                     <!-- Water Charge -->
                     <div class="mb-4">
                         <label class="block font-medium text-sm text-gray-700">Water Charge (₹)</label>
-                        <input type="number" id="water_charge" name="water_charge" step="0.01" required class="w-full border rounded px-3 py-2">
+                        <input type="number" id="water_charge" name="water_charge" step="0.01" required class="w-full border rounded px-3 py-2 bg-gray-100" readonly>
                     </div>
-
-                    <!-- Status -->
-                    <!-- <div class="mb-4">
-                        <label class="block font-medium text-sm text-gray-700">Status</label>
-                        <select name="status" required class="w-full border rounded px-3 py-2">
-                            <option value="unpaid">Unpaid</option>
-                            <option value="paid">Paid</option>
-                        </select>
-                    </div> -->
 
                     <!-- Total Amount -->
                     <div class="mb-6">
@@ -95,17 +90,18 @@
         const waterChargeInput = document.getElementById('water_charge');
         const totalAmountDisplay = document.getElementById('total_amount_display');
         const lastUnitInput = document.getElementById('last_electric_unit');
+        const unitDiffDisplay = document.getElementById('unit_diff_display');
 
         const electricRate = {{ $electricRate }};
         let rentAmount = 0;
         let lastUnit = 0;
+        let water = 0;
 
         function calculateCharges() {
             const currentUnits = parseFloat(electricityUnitsInput.value) || 0;
-            const water = parseFloat(waterChargeInput.value) || 0;
             const unitDiff = Math.max(currentUnits - lastUnit, 0);
 
-            document.getElementById('unit_diff_display').value = unitDiff;
+            unitDiffDisplay.value = unitDiff;
 
             const electricityCharge = unitDiff * electricRate;
             electricityChargeInput.value = electricityCharge.toFixed(2);
@@ -128,32 +124,38 @@
                 });
         }
 
-        tenantSelect.addEventListener('change', function () {
-            const selectedOption = this.options[this.selectedIndex];
+        function updateWaterCharge() {
+            const selectedOption = tenantSelect.options[tenantSelect.selectedIndex];
             rentAmount = parseFloat(selectedOption.getAttribute('data-rent')) || 0;
 
-            toggleWaterChargeReadonly(); // 👈 add this line
+            const isWaterCharge = parseInt(selectedOption.getAttribute('data-is-water-charge')) || 0;
+            const waterCharge = parseFloat(selectedOption.getAttribute('data-water-charge')) || 0;
+
+            if (isWaterCharge === 1) {
+                water = waterCharge;
+                waterChargeInput.value = waterCharge.toFixed(2);
+                // waterChargeInput.classList.remove('bg-gray-100');
+                // waterChargeInput.removeAttribute('readonly');
+            } else {
+                water = 0;
+                waterChargeInput.value = '0.00';
+                waterChargeInput.classList.add('bg-gray-100');
+                waterChargeInput.setAttribute('readonly', true);
+            }
+
+            calculateCharges();
+        }
+
+        tenantSelect.addEventListener('change', function () {
+            updateWaterCharge();
             fetchLastUnits();
         });
 
-        function toggleWaterChargeReadonly() {
-            const selectedOption = tenantSelect.options[tenantSelect.selectedIndex];
-            const isWaterCharge = parseInt(selectedOption.getAttribute('data-is-water-charge')) || 0;
-            console.log('isWaterCharge:', isWaterCharge);
-
-            if (isWaterCharge === 0) {
-                waterChargeInput.value = 0;
-                waterChargeInput.setAttribute('readonly', true);
-                waterChargeInput.classList.add('bg-gray-100');
-            } else {
-                waterChargeInput.removeAttribute('readonly');
-                waterChargeInput.classList.remove('bg-gray-100');
-            }
-        }
-
-
         monthInput.addEventListener('change', fetchLastUnits);
         electricityUnitsInput.addEventListener('input', calculateCharges);
-        waterChargeInput.addEventListener('input', calculateCharges);
+        waterChargeInput.addEventListener('input', function () {
+            water = parseFloat(this.value) || 0;
+            calculateCharges();
+        });
     </script>
 </x-app-layout>

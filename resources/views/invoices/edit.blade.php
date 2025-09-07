@@ -23,6 +23,7 @@
                                     {{ $tenant->id == $invoice->tenant_id ? 'selected' : '' }}
                                     data-rent="{{ $tenant->rent_amount }}"
                                     data-is-water-charge="{{ $tenant->is_water_charge }}"
+                                    data-water-charge="{{ $tenant->water_charge }}"
                                 >
                                     {{ $tenant->name }} (Room: {{ $tenant->room_no }})
                                 </option>
@@ -46,19 +47,19 @@
                             class="w-full border rounded px-3 py-2" required>
                     </div>
 
-                    <!-- Last Month Units (readonly) -->
+                    <!-- Last Month Units -->
                     <div class="mb-4">
                         <label class="block font-medium text-sm text-gray-700">Last Month Units</label>
                         <input type="number" id="last_month_units" class="w-full border rounded px-3 py-2 bg-gray-100" readonly>
                     </div>
 
-                    <!-- Unit Diff (readonly) -->
+                    <!-- Unit Diff -->
                     <div class="mb-4">
                         <label class="block font-medium text-sm text-gray-700">Unit Difference</label>
                         <input type="number" id="unit_diff" class="w-full border rounded px-3 py-2 bg-gray-100" readonly>
                     </div>
 
-                    <!-- Electricity Charge (readonly) -->
+                    <!-- Electricity Charge -->
                     <div class="mb-4">
                         <label class="block font-medium text-sm text-gray-700">Electricity Charge</label>
                         <input type="number" name="electricity_charge" id="electricity_charge"
@@ -71,10 +72,10 @@
                         <label class="block font-medium text-sm text-gray-700">Water Charge</label>
                         <input type="number" name="water_charge" id="water_charge"
                             value="{{ $invoice->water_charge }}" step="0.01"
-                            class="w-full border rounded px-3 py-2" required>
+                            class="w-full border rounded px-3 py-2 bg-gray-100" required readonly>
                     </div>
 
-                    <!-- Total Amount (readonly) -->
+                    <!-- Total Amount -->
                     <div class="mb-4">
                         <label class="block font-medium text-sm text-gray-700">Total Amount</label>
                         <input type="number" name="total_amount" id="total_amount"
@@ -82,12 +83,12 @@
                             class="w-full border rounded px-3 py-2 bg-gray-100" readonly>
                     </div>
 
-                    <!-- Status -->
+                    <!-- Received Amount -->
                     <div class="mb-4">
                         <label class="block font-medium text-sm text-gray-700">Received Amount</label>
                         <input type="number" name="received_amount" id="received_amount"
                             value="{{ $invoice->received_amount }}" step="0.01"
-                            class="w-full border rounded px-3 py-2 " >
+                            class="w-full border rounded px-3 py-2">
                     </div>
 
                     <div class="flex justify-end">
@@ -116,20 +117,24 @@
         const totalInput = document.getElementById('total_amount');
 
         function toggleWaterChargeField() {
-            const isWaterCharge = tenantSelect.selectedOptions[0]?.dataset.isWaterCharge;
+            const selectedOption = tenantSelect.selectedOptions[0];
+            const isWaterCharge = selectedOption?.dataset.isWaterCharge;
+            const waterCharge = parseFloat(selectedOption?.dataset.waterCharge || 0);
+
             if (isWaterCharge == "0") {
                 waterInput.readOnly = true;
                 waterInput.value = 0;
+                waterInput.classList.add('bg-gray-100');
             } else {
-                waterInput.readOnly = false;
+                if (!waterInput.value || parseFloat(waterInput.value) === 0) {
+                    waterInput.value = waterCharge.toFixed(2);
+                }
             }
         }
-
 
         function fetchLastMonthUnits() {
             const tenantId = tenantSelect.value;
             const month = monthInput.value;
-
             if (!tenantId || !month) return;
 
             fetch(`/tenant-last-units/${tenantId}/${month}`)
@@ -158,15 +163,18 @@
 
         unitInput.addEventListener('input', calculateCharges);
         waterInput.addEventListener('input', calculateCharges);
+
         tenantSelect.addEventListener('change', () => {
             fetchLastMonthUnits();
             toggleWaterChargeField();
         });
+
         monthInput.addEventListener('change', fetchLastMonthUnits);
 
         window.addEventListener('load', () => {
             fetchLastMonthUnits();
-            toggleWaterChargeField(); // initial state
+            toggleWaterChargeField();
+            calculateCharges();
         });
     </script>
 </x-app-layout>

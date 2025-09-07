@@ -32,6 +32,11 @@
                         <th class="px-4 py-3">Aadhaar</th>
                         <th class="px-4 py-3">Status</th>
                         <th class="px-4 py-3">Include Water Charge</th>
+                        <th class="px-4 py-3">Water Charge</th>
+                        <th class="px-4 py-3">Is Advanced Paid?</th>
+                        @if ( auth()->user()->user_type == 'SA' )
+                        <th class="px-4 py-3">Owner</th>
+                        @endif
                         <th class="px-4 py-3">Actions</th>
                     </tr>
                 </thead>
@@ -78,6 +83,20 @@
                                 @else
                                     <span class="inline-block px-2 py-1 text-xs font-semibold text-red-800 bg-red-100 rounded-full">No</span>
                                 @endif
+                            </td>
+                            <td class="px-4 py-2">{{ $tenant->water_charge }}</td>
+                            <td class="px-4 py-2">
+                                @if($tenant->is_advanced)
+                                    <span class="inline-block px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">Yes</span>
+                                @else
+                                    <span class="inline-block px-2 py-1 text-xs font-semibold text-red-800 bg-red-100 rounded-full">No</span>
+                                @endif
+                            </td>
+                            @if ( auth()->user()->user_type == 'SA' )
+                            <td class="px-4 py-2">
+                                {{ $tenant->parentUser->name ?? '' }}
+                            </td>
+                            @endif
                             <td class="px-4 py-2 space-x-2">
                                 <a href="{{ route('tenants.edit', $tenant) }}" class="text-blue-600 hover:underline">Edit</a>
                                 <form action="{{ route('tenants.destroy', $tenant) }}" method="POST" class="inline"
