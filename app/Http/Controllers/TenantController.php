@@ -9,8 +9,10 @@ class TenantController extends Controller
 {
     public function index()
     {
-        $tenants = Tenant::ofUser()->with('parentUser')->paginate(10);
-        // echo '<pre>'; print_r($tenants->toArray()); exit;
+        $tenants = Tenant::ofUser()
+        ->with('parentUser')
+        ->orderBy('id', 'desc')   // <-- correct place
+        ->paginate(10);
         return view('tenants.index', compact('tenants'));
     }
 

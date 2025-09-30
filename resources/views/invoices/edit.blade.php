@@ -22,6 +22,7 @@
                                     value="{{ $tenant->id }}" 
                                     {{ $tenant->id == $invoice->tenant_id ? 'selected' : '' }}
                                     data-rent="{{ $tenant->rent_amount }}"
+                                    data-start-month="{{ $tenant->start_date }}" 
                                     data-is-water-charge="{{ $tenant->is_water_charge }}"
                                     data-water-charge="{{ $tenant->water_charge }}"
                                 >
@@ -43,7 +44,7 @@
                     <div class="mb-4">
                         <label class="block font-medium text-sm text-gray-700">Electricity Units</label>
                         <input type="number" name="electricity_units" id="electricity_units"
-                            value="{{ $invoice->electricity_units }}" step="0.01"
+                            value="{{ $invoice->electricity_units }}" step="1"
                             class="w-full border rounded px-3 py-2" required>
                     </div>
 
@@ -63,7 +64,7 @@
                     <div class="mb-4">
                         <label class="block font-medium text-sm text-gray-700">Electricity Charge</label>
                         <input type="number" name="electricity_charge" id="electricity_charge"
-                            value="{{ $invoice->electricity_charge }}" step="0.01"
+                            value="{{ $invoice->electricity_charge }}" step="1"
                             class="w-full border rounded px-3 py-2 bg-gray-100" readonly>
                     </div>
 
@@ -71,7 +72,7 @@
                     <div class="mb-4">
                         <label class="block font-medium text-sm text-gray-700">Water Charge</label>
                         <input type="number" name="water_charge" id="water_charge"
-                            value="{{ $invoice->water_charge }}" step="0.01"
+                            value="{{ $invoice->water_charge }}" step="1"
                             class="w-full border rounded px-3 py-2 bg-gray-100" required readonly>
                     </div>
 
@@ -79,7 +80,7 @@
                     <div class="mb-4">
                         <label class="block font-medium text-sm text-gray-700">Total Amount</label>
                         <input type="number" name="total_amount" id="total_amount"
-                            value="{{ $invoice->total_amount }}" step="0.01"
+                            value="{{ $invoice->total_amount }}" step="1"
                             class="w-full border rounded px-3 py-2 bg-gray-100" readonly>
                     </div>
 
@@ -87,7 +88,7 @@
                     <div class="mb-4">
                         <label class="block font-medium text-sm text-gray-700">Received Amount</label>
                         <input type="number" name="received_amount" id="received_amount"
-                            value="{{ $invoice->received_amount }}" step="0.01"
+                            value="{{ $invoice->received_amount }}" step="1"
                             class="w-full border rounded px-3 py-2">
                     </div>
 
@@ -106,7 +107,7 @@
     @endphp
 
     <script>
-        const electricityRate = {{ $electricRate }};
+        const electricRate = {{ $electricRate }};
         const tenantSelect = document.getElementById('tenant_id');
         const monthInput = document.getElementById('month');
         const unitInput = document.getElementById('electricity_units');
@@ -147,19 +148,38 @@
         }
 
         function calculateCharges() {
+            const selectedOption = tenantSelect.options[tenantSelect.selectedIndex];
+            const startMonth = selectedOption.dataset.startMonth;
+            const invoiceMonth = monthInput.value;  
+            const startMonthFormatted = startMonth.slice(0, 7);
+
             const currentUnits = parseFloat(unitInput.value) || 0;
             const lastUnits = parseFloat(lastUnitInput.value) || 0;
             const waterCharge = parseFloat(waterInput.value) || 0;
-            const rent = parseFloat(tenantSelect.selectedOptions[0]?.dataset.rent || 0);
+            const rent = parseFloat(selectedOption?.dataset.rent || 0);
+            const electricRate = parseFloat(document.getElementById("electricRate").value) || 0;
 
             const unitDiff = Math.max(currentUnits - lastUnits, 0);
-            const electricityCharge = unitDiff * electricityRate;
-            const total = electricityCharge + waterCharge + rent;
 
-            diffInput.value = unitDiff.toFixed(2);
-            chargeInput.value = electricityCharge.toFixed(2);
-            totalInput.value = total.toFixed(2);
+            // If same month → only rent + water, electricity = 0
+            if (startMonthFormatted === invoiceMonth) {
+                diffInput.value = unitDiff.toFixed(2);
+                chargeInput.value = "0.00";
+
+                const total = rent + waterCharge;
+                totalInput.value = total.toFixed(2);
+            } else {
+                // Different month → rent + water + electricity
+                const electricityCharge = unitDiff * electricRate;
+
+                diffInput.value = unitDiff.toFixed(2);
+                chargeInput.value = electricityCharge.toFixed(2);
+
+                const total = rent + waterCharge + electricityCharge;
+                totalInput.value = total.toFixed(2);
+            }
         }
+
 
         unitInput.addEventListener('input', calculateCharges);
         waterInput.addEventListener('input', calculateCharges);
