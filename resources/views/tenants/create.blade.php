@@ -65,6 +65,12 @@
                         <input type="number" name="water_charge" class="shadow appearance-none border rounded w-full py-2 px-3">
                     </div>
 
+                    <!-- Advanced Paid -->
+                    <div class="mb-6 flex items-center">
+                        <input type="checkbox" name="is_advanced" id="is_advanced" class="mr-2 leading-tight">
+                        <label for="is_advanced" class="text-gray-700 font-bold">Is Advanced Paid</label>
+                    </div>
+
                     <!-- Buttons -->
                     <div class="flex items-center justify-between">
                         <input type="hidden" name="parent_id" value="{{ auth()->user()->id }}">

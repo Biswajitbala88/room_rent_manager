@@ -38,6 +38,7 @@ class InvoiceController extends Controller
             $invoice->sum_electricity_units = max($invoice->electricity_units - $prev_units, 0);
             return $invoice;
         });
+        // echo '<pre>'; print_r($invoices->toArray()); exit;
         return view('invoices.index', compact('invoices'));
     }
 
@@ -46,7 +47,7 @@ class InvoiceController extends Controller
      */
     public function create()
     {
-        $tenants = Tenant::ofUser()->get();
+        $tenants = Tenant::where('status', 'active')->ofUser()->orderBy('room_no', 'asc')->get();
         // echo '<pre>'; print_r($tenants); exit;
         return view('invoices.create', compact('tenants'));
     }
@@ -57,28 +58,19 @@ class InvoiceController extends Controller
             'tenant_id' => 'required|exists:tenants,id',
             'month' => 'required|date_format:Y-m',
             'electricity_units' => 'required|numeric',
+            'last_electric_unit' => 'required|numeric',
+            'electricity_charge' => 'required|numeric',
             'water_charge' => 'required|numeric',
-            // 'status' => 'required|in:paid,unpaid',
         ]);
 
         $tenant = Tenant::findOrFail($validated['tenant_id']);
-        $electricRate = Config::get('constants.electric_rate');
-
-        $lastInvoice = Invoice::where('tenant_id', $tenant->id)
-            ->where('month', '<', $validated['month'])
-            ->orderBy('month', 'desc')
-            ->first();
-
-        $last_units = $lastInvoice?->electricity_units ?? 0;
-        $unit_diff = max($validated['electricity_units'] - $last_units, 0);
-        $electricity_charge = $unit_diff * $electricRate;
-        $total_amount = $electricity_charge + $validated['water_charge'] + $tenant->rent_amount;
+        $total_amount = $validated['electricity_charge'] + $validated['water_charge'] + $tenant->rent_amount;
 
         Invoice::create([
             'tenant_id' => $validated['tenant_id'],
             'month' => $validated['month'],
             'electricity_units' => $validated['electricity_units'],
-            'electricity_charge' => $electricity_charge,
+            'electricity_charge' => $validated['electricity_charge'],
             'water_charge' => $validated['water_charge'],
             'total_amount' => $total_amount,
             // 'status' => $validated['status'],
@@ -90,6 +82,7 @@ class InvoiceController extends Controller
     // AJAX endpoint to get last unit
     public function getLastUnits($tenant_id, $month)
     {
+        // echo '<pre>'; print_r($month); exit;
         $lastInvoice = Invoice::where('tenant_id', $tenant_id)
             ->where('month', '<', $month)
             ->where('electricity_units', '>', 0)
@@ -124,41 +117,44 @@ class InvoiceController extends Controller
      */
     public function update(Request $request, Invoice $invoice)
     {
+        // echo '<pre>'; print_r($request->all()); exit;
         $validated = $request->validate([
             'tenant_id' => 'required|exists:tenants,id',
             'month' => 'required|date_format:Y-m',
             'electricity_units' => 'required|numeric',
+            'electricity_charge' => 'required|numeric',
             'water_charge' => 'required|numeric',
+            'total_amount' => 'required|numeric',
             'received_amount' => 'required|numeric',
         ]);
 
         // Get tenant with rent
-        $tenant = Tenant::findOrFail($validated['tenant_id']);
-        $electricRate = Config::get('constants.electric_rate');
+        // $tenant = Tenant::findOrFail($validated['tenant_id']);
+        // $electricRate = Config::get('constants.electric_rate');
 
         // Get last month's invoice (excluding the one being updated)
-        $lastInvoice = Invoice::where('tenant_id', $tenant->id)
-            ->where('month', '<', $validated['month'])
-            ->where('id', '!=', $invoice->id) // Exclude current
-            ->where('electricity_units', '>', 0)
-            ->orderBy('month', 'desc')
-            ->first();
+        // $lastInvoice = Invoice::where('tenant_id', $tenant->id)
+        //     ->where('month', '<', $validated['month'])
+        //     ->where('id', '!=', $invoice->id) // Exclude current
+        //     ->where('electricity_units', '>', 0)
+        //     ->orderBy('month', 'desc')
+        //     ->first();
 
-        $last_units = $lastInvoice?->electricity_units ?? 0;
+        // $last_units = $lastInvoice?->electricity_units ?? 0;
 
-        $unit_diff = $validated['electricity_units'] - $last_units;
-        $unit_diff = max($unit_diff, 0); // prevent negative
+        // $unit_diff = $validated['electricity_units'] - $last_units;
+        // $unit_diff = max($unit_diff, 0); // prevent negative
 
-        $electricity_charge = $unit_diff * $electricRate;
-        $total_amount = $electricity_charge + $validated['water_charge'] + $tenant->rent_amount;
+        // $electricity_charge = $unit_diff * $electricRate;
+        // $total_amount = $electricity_charge + $validated['water_charge'] + $tenant->rent_amount;
 
         $invoice->update([
             'tenant_id' => $validated['tenant_id'],
             'month' => $validated['month'],
             'electricity_units' => $validated['electricity_units'],
-            'electricity_charge' => $electricity_charge,
+            'electricity_charge' => $validated['electricity_charge'],
             'water_charge' => $validated['water_charge'],
-            'total_amount' => $total_amount,
+            'total_amount' => $validated['total_amount'],
             'received_amount' => $validated['received_amount'],
         ]);
 
@@ -179,6 +175,7 @@ class InvoiceController extends Controller
      */
     public function download(Invoice $invoice)
     {
+        // echo '<pre>'; print_r($invoice->tenant->start_date); exit;
         // Current reading from the invoice
         $currentUnit = (int) $invoice->electricity_units;
         $invoice->currentUnit = $currentUnit;
@@ -192,8 +189,13 @@ class InvoiceController extends Controller
         // Previous reading
         $previousUnit = $lastInvoice ? (int) $lastInvoice->electricity_units : 0;
 
-        // Calculate usage
         $unitDiff = $currentUnit - $previousUnit;
+
+        if (date('Y-m', strtotime($invoice->tenant->start_date)) == $invoice->month) {
+            $unitDiff = 0;
+        }
+
+        // Calculate usage
         $electricityRate = config('constants.ELECTRIC_RATE', 10); // ₹10 default if not found
         $electricityCharge = $unitDiff * $electricityRate;
 
@@ -209,9 +211,9 @@ class InvoiceController extends Controller
         
         
         $filename = "Invoice_{$filenameSlug}";
-
+// echo '<pre>'; print_r($invoice); exit;
         // Load and download PDF
-        // return view('invoices.invoice', compact('invoice', 'invoice'));exit;
+        // return view('invoices.invoice', compact('invoice'));exit;
         $pdf = Pdf::loadView('invoices.invoice', compact('invoice'));
         return $pdf->download($filename);
     }

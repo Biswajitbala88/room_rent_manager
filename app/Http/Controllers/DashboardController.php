@@ -25,11 +25,20 @@ class DashboardController extends Controller
         // Tenants for the dropdown
         $tenants = Tenant::ofUser()->get();
 
-        foreach ($tenants as $tenant) {
+        $tenants = $tenants->filter(function ($tenant) {
             $tenant->due_invoice_count = Invoice::where('tenant_id', $tenant->id)
                 ->whereColumn('received_amount', '<', 'total_amount')
                 ->count();
-        }
+
+            // Keep tenant if:
+            // 1. status is not "close", OR
+            // 2. status is "close" but they have dues
+            if ($tenant->status !== 'close') {
+                return true;
+            }
+
+            return $tenant->due_invoice_count > 0;
+        });
 
         return view('dashboard', compact(
             'currentMonth',

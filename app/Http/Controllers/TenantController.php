@@ -9,8 +9,10 @@ class TenantController extends Controller
 {
     public function index()
     {
-        $tenants = Tenant::ofUser()->with('parentUser')->paginate(10);
-        // echo '<pre>'; print_r($tenants->toArray()); exit;
+        $tenants = Tenant::ofUser()
+        ->with('parentUser')
+        ->orderBy('id', 'desc')   // <-- correct place
+        ->paginate(10);
         return view('tenants.index', compact('tenants'));
     }
 
@@ -20,30 +22,50 @@ class TenantController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-        ]);
-        $data = $request->only([
-            'name',
-            'phone',
-            'room_no',
-            'start_date',
-            'rent_amount',
-            'is_water_charge',
-            'parent_id',
-            'water_charge',
-        ]);
-        $data['status'] = 'active'; 
-        $data['is_water_charge'] = $request->has('is_water_charge') ? 1 : 0; 
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+    ]);
 
-        if (Tenant::room_availability($data['room_no'])) {
-            return redirect()->back()->with('error', 'Room number is already occupied.');
+    $data = $request->only([
+        'name',
+        'phone',
+        'room_no',
+        'start_date',
+        'rent_amount',
+        'is_water_charge',
+        'parent_id',
+        'water_charge',
+        'is_advanced',
+    ]);
+
+    // Defaults
+    $data['status'] = 'active';
+    $data['is_water_charge'] = $request->has('is_water_charge') ? 1 : 0;
+    $data['is_advanced'] = $request->has('is_advanced') ? 1 : 0;
+
+    // Force water_charge = 0 if not applicable
+    if ($data['is_water_charge'] == 0) {
+        $data['water_charge'] = 0;
+    }
+
+    // Check room availability
+    if (Tenant::room_availability($data['room_no'])) {
+        return redirect()->back()->with('error', 'Room number is already occupied.');
+    }
+
+    // Aadhaar image(s) upload
+    $photoPaths = [];
+
+    if ($request->hasFile('aadhaar_image')) {
+        $files = $request->file('aadhaar_image');
+
+        // Normalize: handle both single & multiple uploads
+        if (!is_array($files)) {
+            $files = [$files];
         }
 
-        $photoPaths = [];
-
-        foreach ($request->file('aadhaar_image') as $file) {
+        foreach ($files as $file) {
             $nameSlug = strtolower(str_replace(' ', '_', $data['name']));
             $timestamp = time() . rand(100, 999);
             $extension = $file->getClientOriginalExtension();
@@ -54,13 +76,14 @@ class TenantController extends Controller
         }
 
         $data['aadhaar_image'] = json_encode($photoPaths);
-
-        // echo '<pre>'; print_r($data); exit;
-
-        Tenant::create($data);
-
-        return redirect()->route('tenants.index')->with('success', 'Tenant created successfully.');
     }
+
+    // Save tenant
+    Tenant::create($data);
+
+    return redirect()->route('tenants.index')->with('success', 'Tenant created successfully.');
+}
+
 
 
     public function show(Tenant $tenant)
@@ -88,21 +111,34 @@ class TenantController extends Controller
             'is_water_charge',
             'parent_id',
             'water_charge',
+            'is_advanced',
         ]);
 
+        // Handle water charge toggle
         $data['is_water_charge'] = $request->has('is_water_charge') ? 1 : 0;
-        if ($data['is_water_charge'] == 0 ){
+        if ($data['is_water_charge'] == 0) {
             $data['water_charge'] = 0;
         }
+
+        // Handle advance toggle
+        $data['is_advanced'] = $request->has('is_advanced') ? 1 : 0;
+
+        // Room availability check (skip current tenant id)
         if (Tenant::room_availability($data['room_no'], $id)) {
             return redirect()->back()->with('error', 'Room number is already occupied.');
         }
 
-        // Handle multiple Aadhaar images if uploaded
+        // Handle Aadhaar image(s)
         if ($request->hasFile('aadhaar_image')) {
             $photoPaths = [];
+            $files = $request->file('aadhaar_image');
 
-            foreach ($request->file('aadhaar_image') as $file) {
+            // Normalize to array (supports single & multiple uploads)
+            if (!is_array($files)) {
+                $files = [$files];
+            }
+
+            foreach ($files as $file) {
                 $nameSlug = strtolower(str_replace(' ', '_', $data['name']));
                 $timestamp = time() . rand(100, 999);
                 $extension = $file->getClientOriginalExtension();
@@ -114,12 +150,13 @@ class TenantController extends Controller
 
             $data['aadhaar_image'] = json_encode($photoPaths);
         }
-        // echo '<pre>'; print_r($data); exit;
 
+        // Update tenant record
         $tenant->update($data);
 
-        return redirect()->route('tenants.index')->with('success', 'Tenant updated successfully.');
+        return redirect()->back()->with('success', 'Tenant updated successfully.');
     }
+
 
 
 

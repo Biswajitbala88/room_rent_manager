@@ -20,6 +20,7 @@
                                 <option 
                                     value="{{ $tenant->id }}" 
                                     data-rent="{{ $tenant->rent_amount }}" 
+                                    data-start-month="{{ $tenant->start_date }}" 
                                     data-is-water-charge="{{ $tenant->is_water_charge }}"
                                     data-water-charge="{{ $tenant->water_charge }}"
                                 >
@@ -32,13 +33,13 @@
                     <!-- Month -->
                     <div class="mb-4">
                         <label class="block font-medium text-sm text-gray-700">Month</label>
-                        <input type="month" name="month" id="month" required class="w-full border rounded px-3 py-2">
+                        <input type="month" name="month" id="month" required class="w-full border rounded px-3 py-2" value="{{ now()->format('Y-m') }}">
                     </div>
 
                     <!-- Electricity Units -->
                     <div class="mb-4">
                         <label class="block font-medium text-sm text-gray-700">Electricity Units (Current)</label>
-                        <input type="number" id="electricity_units" name="electricity_units" step="0.01" required class="w-full border rounded px-3 py-2">
+                        <input type="number" id="electricity_units" name="electricity_units" step="1" required class="w-full border rounded px-3 py-2">
                     </div>
 
                     <!-- Hidden Input to Store Last Units -->
@@ -53,7 +54,7 @@
                     <!-- Electricity Charge -->
                     <div class="mb-4">
                         <label class="block font-medium text-sm text-gray-700">Electricity Charge (₹)</label>
-                        <input type="number" id="electricity_charge" name="electricity_charge" step="0.01" readonly class="w-full border rounded px-3 py-2 bg-gray-100">
+                        <input type="number" id="electricity_charge" name="electricity_charge" step="1" readonly class="w-full border rounded px-3 py-2 bg-gray-100">
                     </div>
 
                     <!-- Water Charge -->
@@ -98,16 +99,28 @@
         let water = 0;
 
         function calculateCharges() {
+            const selectedOption = tenantSelect.options[tenantSelect.selectedIndex];
+            const startMonth = selectedOption.dataset.startMonth;
+            const invoiceMonth = monthInput.value;  
+            const startMonthFormatted = startMonth.slice(0, 7);
+            
             const currentUnits = parseFloat(electricityUnitsInput.value) || 0;
             const unitDiff = Math.max(currentUnits - lastUnit, 0);
-
             unitDiffDisplay.value = unitDiff;
 
-            const electricityCharge = unitDiff * electricRate;
-            electricityChargeInput.value = electricityCharge.toFixed(2);
+            if (startMonthFormatted === invoiceMonth) {
+                // Same month → only rent + water, no electricity charge
+                electricityChargeInput.value = "0.00";
+                const total = rentAmount + water;
+                totalAmountDisplay.value = total.toFixed(2);
+            } else {
+                // Different month → rent + water + electricity
+                const electricityCharge = unitDiff * electricRate;
+                electricityChargeInput.value = electricityCharge.toFixed(2);
 
-            const total = rentAmount + electricityCharge + water;
-            totalAmountDisplay.value = total.toFixed(2);
+                const total = rentAmount + electricityCharge + water;
+                totalAmountDisplay.value = total.toFixed(2);
+            }
         }
 
         function fetchLastUnits() {

@@ -22,6 +22,7 @@ class Tenant extends Model
         'is_water_charge',
         'parent_id',
         'water_charge',
+        'is_advanced',
     ];
 
     public function invoices()
