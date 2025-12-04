@@ -90,12 +90,15 @@ class InvoiceController extends Controller
     // AJAX endpoint to get last unit
     public function getLastUnits($tenant_id, $month)
     {
-        $lastInvoice = Invoice::where('tenant_id', $tenant_id)
+        // $prevMonth = Carbon::parse($month)->subMonth()->format('F');
+        $tenant = Tenant::where('id', $tenant_id)->first();
+        // $tenant = Invoice::get();
+        $lastInvoice = Invoice::where('room_no', $tenant->room_no)
             ->where('month', '<', $month)
+            // ->where('tenant_id', '=', $tenant_id)
             ->where('electricity_units', '>', 0)
             ->orderBy('month', 'desc') 
             ->first();
-
         return response()->json([
             'last_units' => $lastInvoice?->electricity_units ?? 0,
         ]);
@@ -116,6 +119,7 @@ class InvoiceController extends Controller
     public function edit(Invoice $invoice)
     {
         $tenants = Tenant::ofUser()->get();
+        // echo '<pre>'; print_r($invoice); exit;
         return view('invoices.edit', compact('invoice', 'tenants'));
     }
 
@@ -183,14 +187,18 @@ class InvoiceController extends Controller
         $currentUnit = (int) $invoice->electricity_units;
         $invoice->currentUnit = $currentUnit;
         // Fetch the previous invoice for the same tenant
-        $lastInvoice = Invoice::where('tenant_id', $invoice->tenant_id)
-            ->where('month', '<', $invoice->month)
-            ->where('electricity_units', '>', 0)
-            ->orderBy('month', 'desc')
-            ->first();
+        // $lastInvoice = Invoice::where('tenant_id', $invoice->tenant_id)
+        //     ->where('month', '<', $invoice->month)
+        //     ->where('electricity_units', '>', 0)
+        //     ->orderBy('month', 'desc')
+        //     ->first();
+
+        $lastInvoice = $this->getLastUnits($invoice->tenant_id, $invoice->month);
+        $lastUnits = $lastInvoice->getData()->last_units;
+            // echo '<pre>'; print_r($lastUnits); exit;
 
         // Previous reading
-        $previousUnit = $lastInvoice ? (int) $lastInvoice->electricity_units : 0;
+        $previousUnit = $lastInvoice ? (int) $lastUnits : 0;
 
         // Calculate usage
         $unitDiff = $currentUnit - $previousUnit;
@@ -211,7 +219,7 @@ class InvoiceController extends Controller
         $filename = "Invoice_{$filenameSlug}";
 
         // Load and download PDF
-        // return view('invoices.invoice', compact('invoice', 'invoice'));exit;
+        // return view('invoices.invoice', compact('invoice'));exit;
         $pdf = Pdf::loadView('invoices.invoice', compact('invoice'));
         return $pdf->download($filename);
     }

@@ -16,6 +16,7 @@ class Invoice extends Model
         'total_amount',
         'status',
         'received_amount',
+        'room_no',
     ];
 
 
