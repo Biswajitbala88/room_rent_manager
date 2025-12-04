@@ -80,22 +80,13 @@ class InvoiceController extends Controller
     }
 
     // AJAX endpoint to get last unit
-    public function getLastUnits($tenant_id, $month)
-    {
-        // echo '<pre>'; print_r($month); exit;
-        $lastInvoice = Invoice::where('tenant_id', $tenant_id)
-        // $prevMonth = Carbon::parse($month)->subMonth()->format('F');
-        $tenant = Tenant::where('id', $tenant_id)->first();
-        // $tenant = Invoice::get();
-        $lastInvoice = Invoice::where('room_no', $tenant->room_no)
-            ->where('month', '<', $month)
-            // ->where('tenant_id', '=', $tenant_id)
-            ->where('electricity_units', '>', 0)
-            ->orderBy('month', 'desc') 
-            ->first();
-        return response()->json([
-            'last_units' => $lastInvoice?->electricity_units ?? 0,
-        ]);
+    public function getLastUnits($tenant_id, $month) { 
+        $tenant = Tenant::where('id', $tenant_id)->first(); 
+        $lastInvoice = Invoice::where('room_no', $tenant->room_no) 
+        ->where('month', '<', $month) 
+        ->where('electricity_units', '>', 0) 
+        ->orderBy('month', 'desc') ->first(); 
+        return response()->json([ 'last_units' => $lastInvoice?->electricity_units ?? 0, ]); 
     }
 
 
