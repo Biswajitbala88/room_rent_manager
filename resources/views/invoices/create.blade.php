@@ -68,6 +68,11 @@
                         <label class="block font-medium text-sm text-gray-700">Total Amount (₹)</label>
                         <input type="text" id="total_amount_display" readonly class="w-full border rounded px-3 py-2 bg-gray-100 font-semibold text-lg">
                     </div>
+                    @if (request()->segment(2) === 'closer')
+                    Is closer? 
+                        <input class="ms-3" type="checkbox" name="closer" value="1" checked>
+                    @endif
+
 
                     <div class="flex justify-end">
                         <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">

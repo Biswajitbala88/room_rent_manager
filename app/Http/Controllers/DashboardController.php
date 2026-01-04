@@ -30,13 +30,7 @@ class DashboardController extends Controller
                 ->whereColumn('received_amount', '<', 'total_amount')
                 ->count();
 
-            // Keep tenant if:
-            // 1. status is not "close", OR
-            // 2. status is "close" but they have dues
-            if ($tenant->status !== 'close') {
-                return true;
-            }
-
+            // keep tenant only if due_invoice_count > 0
             return $tenant->due_invoice_count > 0;
         });
 

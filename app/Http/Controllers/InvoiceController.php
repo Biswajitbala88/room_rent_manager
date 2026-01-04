@@ -45,10 +45,9 @@ class InvoiceController extends Controller
     /**
      * Show form to create a new invoice.
      */
-    public function create()
+    public function create(Request $request)
     {
         $tenants = Tenant::where('status', 'active')->ofUser()->orderBy('room_no', 'asc')->get();
-        // echo '<pre>'; print_r($tenants); exit;
         return view('invoices.create', compact('tenants'));
     }
 
@@ -61,23 +60,42 @@ class InvoiceController extends Controller
             'last_electric_unit' => 'required|numeric',
             'electricity_charge' => 'required|numeric',
             'water_charge' => 'required|numeric',
+            'closer' => 'nullable|numeric',
         ]);
 
         $tenant = Tenant::findOrFail($validated['tenant_id']);
-        $total_amount = $validated['electricity_charge'] + $validated['water_charge'] + $tenant->rent_amount;
+
+        // default: rent included
+        $rent = $tenant->rent_amount;
+
+        // only when closing, check advance
+        if (($validated['closer'] ?? 0) == 1 && $tenant->is_advanced == 1) {
+            $rent = 0;
+        }
+
+        $total_amount =
+            $validated['electricity_charge']
+            + $validated['water_charge']
+            + $rent;
 
         Invoice::create([
-            'tenant_id' => $validated['tenant_id'],
+            'tenant_id' => $tenant->id,
             'month' => $validated['month'],
             'electricity_units' => $validated['electricity_units'],
             'electricity_charge' => $validated['electricity_charge'],
             'water_charge' => $validated['water_charge'],
             'total_amount' => $total_amount,
-            // 'status' => $validated['status'],
         ]);
 
-        return redirect()->route('invoices.index')->with('success', 'Invoice created successfully.');
+        if (($validated['closer'] ?? 0) == 1) {
+            $tenant->update(['status' => 'close']);
+        }
+
+        return redirect()
+            ->route('invoices.index')
+            ->with('success', 'Invoice created successfully.');
     }
+
 
     // AJAX endpoint to get last unit
     public function getLastUnits($tenant_id, $month) { 

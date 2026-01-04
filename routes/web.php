@@ -61,6 +61,7 @@ Route::middleware('auth')->group(function () {
 // Invoice Routes
 // ----------------------
 Route::middleware('auth')->group(function () {
+    Route::get('/invoices/closer', [InvoiceController::class, 'create']);
     Route::resource('invoices', InvoiceController::class);
     Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('invoices.download');
 
