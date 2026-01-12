@@ -84,6 +84,8 @@
         </div>
     </div>
 
+    
+
     @php
         $electricRate = config('constants.electric_rate');
     @endphp
