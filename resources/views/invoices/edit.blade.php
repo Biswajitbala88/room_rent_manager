@@ -18,14 +18,10 @@
                         <select name="tenant_id" id="tenant_id" class="w-full border rounded px-3 py-2" required>
                             <option value="">Select Tenant</option>
                             @foreach ($tenants as $tenant)
-                                <option 
-                                    value="{{ $tenant->id }}" 
-                                    {{ $tenant->id == $invoice->tenant_id ? 'selected' : '' }}
-                                    data-rent="{{ $tenant->rent_amount }}"
-                                    data-start-month="{{ $tenant->start_date }}" 
+                                <option value="{{ $tenant->id }}" {{ $tenant->id == $invoice->tenant_id ? 'selected' : '' }}
+                                    data-rent="{{ $tenant->rent_amount }}" data-start-month="{{ $tenant->start_date }}"
                                     data-is-water-charge="{{ $tenant->is_water_charge }}"
-                                    data-water-charge="{{ $tenant->water_charge }}"
-                                >
+                                    data-water-charge="{{ $tenant->water_charge }}">
                                     {{ $tenant->name }} (Room: {{ $tenant->room_no }})
                                 </option>
                             @endforeach
@@ -44,20 +40,21 @@
                     <div class="mb-4">
                         <label class="block font-medium text-sm text-gray-700">Electricity Units</label>
                         <input type="number" name="electricity_units" id="electricity_units"
-                            value="{{ $invoice->electricity_units }}" step="1"
-                            class="w-full border rounded px-3 py-2" required>
+                            value="{{ $invoice->electricity_units }}" step="1" class="w-full border rounded px-3 py-2"
+                            required>
                     </div>
 
                     <!-- Last Month Units -->
                     <div class="mb-4">
                         <label class="block font-medium text-sm text-gray-700">Last Month Units</label>
-                        <input type="number" id="last_month_units" class="w-full border rounded px-3 py-2 bg-gray-100" readonly>
+                        <input type="number" id="last_month_units" class="w-full border rounded px-3 py-2">
                     </div>
 
                     <!-- Unit Diff -->
                     <div class="mb-4">
                         <label class="block font-medium text-sm text-gray-700">Unit Difference</label>
-                        <input type="number" id="unit_diff" class="w-full border rounded px-3 py-2 bg-gray-100" readonly>
+                        <input type="number" id="unit_diff" class="w-full border rounded px-3 py-2 bg-gray-100"
+                            readonly>
                     </div>
 
                     <!-- Electricity Charge -->
@@ -71,25 +68,22 @@
                     <!-- Water Charge -->
                     <div class="mb-4">
                         <label class="block font-medium text-sm text-gray-700">Water Charge</label>
-                        <input type="number" name="water_charge" id="water_charge"
-                            value="{{ $invoice->water_charge }}" step="1"
-                            class="w-full border rounded px-3 py-2 bg-gray-100" required readonly>
+                        <input type="number" name="water_charge" id="water_charge" value="{{ $invoice->water_charge }}"
+                            step="1" class="w-full border rounded px-3 py-2 bg-gray-100" required readonly>
                     </div>
 
                     <!-- Total Amount -->
                     <div class="mb-4">
                         <label class="block font-medium text-sm text-gray-700">Total Amount</label>
-                        <input type="number" name="total_amount" id="total_amount"
-                            value="{{ $invoice->total_amount }}" step="1"
-                            class="w-full border rounded px-3 py-2 bg-gray-100" readonly>
+                        <input type="number" name="total_amount" id="total_amount" value="{{ $invoice->total_amount }}"
+                            step="1" class="w-full border rounded px-3 py-2 bg-gray-100" readonly>
                     </div>
 
                     <!-- Received Amount -->
                     <div class="mb-4">
                         <label class="block font-medium text-sm text-gray-700">Received Amount</label>
                         <input type="number" name="received_amount" id="received_amount"
-                            value="{{ $invoice->received_amount }}" step="1"
-                            class="w-full border rounded px-3 py-2">
+                            value="{{ $invoice->received_amount }}" step="1" class="w-full border rounded px-3 py-2">
                     </div>
 
                     <div class="flex justify-end">
@@ -150,14 +144,14 @@
         function calculateCharges() {
             const selectedOption = tenantSelect.options[tenantSelect.selectedIndex];
             const startMonth = selectedOption.dataset.startMonth;
-            const invoiceMonth = monthInput.value;  
+            const invoiceMonth = monthInput.value;
             const startMonthFormatted = startMonth.slice(0, 7);
 
             const currentUnits = parseFloat(unitInput.value) || 0;
             const lastUnits = parseFloat(lastUnitInput.value) || 0;
             const waterCharge = parseFloat(waterInput.value) || 0;
             const rent = parseFloat(selectedOption?.dataset.rent || 0);
-            const electricRate = parseFloat(document.getElementById("electricRate").value) || 0;
+            // const electricRate = parseFloat(document.getElementById("electricRate").value) || 0;
 
             const unitDiff = Math.max(currentUnits - lastUnits, 0);
 
@@ -183,6 +177,7 @@
 
         unitInput.addEventListener('input', calculateCharges);
         waterInput.addEventListener('input', calculateCharges);
+        lastUnitInput.addEventListener('input', calculateCharges);
 
         tenantSelect.addEventListener('change', () => {
             fetchLastMonthUnits();

@@ -98,14 +98,24 @@ class InvoiceController extends Controller
 
 
     // AJAX endpoint to get last unit
-    public function getLastUnits($tenant_id, $month) { 
-        $tenant = Tenant::where('id', $tenant_id)->first(); 
-        $lastInvoice = Invoice::where('room_no', $tenant->room_no) 
-        ->where('month', '<', $month) 
-        ->where('electricity_units', '>', 0) 
-        ->orderBy('month', 'desc') ->first(); 
-        return response()->json([ 'last_units' => $lastInvoice?->electricity_units ?? 0, ]); 
+    public function getLastUnits($tenant_id, $month)
+    {
+        $tenant = Tenant::find($tenant_id);
+
+        if (!$tenant) {
+            return response()->json(['last_units' => 0]);
+        }
+
+        $lastInvoice = Invoice::where('tenant_id', $tenant_id)
+            ->where('month', '<', $month)
+            ->orderBy('month', 'desc')
+            ->first();
+
+        return response()->json([
+            'last_units' => $lastInvoice?->electricity_units ?? 0
+        ]);
     }
+
 
 
     /**
@@ -200,22 +210,15 @@ class InvoiceController extends Controller
         //     ->orderBy('month', 'desc')
         //     ->first();
 
-        $lastInvoice = $this->getLastUnits($invoice->tenant_id, $invoice->month);
-        $lastUnits = $lastInvoice->getData()->last_units;
-            // echo '<pre>'; print_r($lastUnits); exit;
+        // Calculate usage based on stored charge
+        $electricityRate = config('constants.ELECTRIC_RATE', 10); // ₹10 default
+        $electricityCharge = $invoice->electricity_charge;
 
-        // Previous reading
-        $previousUnit = $lastInvoice ? (int) $lastUnits : 0;
+        // Back-calculate unit difference from the charge
+        // Avoid division by zero
+        $unitDiff = $electricityRate > 0 ? round($electricityCharge / $electricityRate) : 0;
 
-        $unitDiff = $currentUnit - $previousUnit;
-
-        if (date('Y-m', strtotime($invoice->tenant->start_date)) == $invoice->month) {
-            $unitDiff = 0;
-        }
-
-        // Calculate usage
-        $electricityRate = config('constants.ELECTRIC_RATE', 10); // ₹10 default if not found
-        $electricityCharge = $unitDiff * $electricityRate;
+        $previousUnit = $currentUnit - $unitDiff;
 
         // Append custom display-only fields
         $invoice->electricity_display = "{$currentUnit} - {$previousUnit} = {$unitDiff}";
@@ -226,10 +229,10 @@ class InvoiceController extends Controller
         // Remove debug
         $nameSlug = strtolower(str_replace(' ', '_', $invoice->tenant->name));
         $filenameSlug = "{$nameSlug}_{$invoice->month}.pdf";
-        
-        
+
+
         $filename = "Invoice_{$filenameSlug}";
-// echo '<pre>'; print_r($invoice); exit;
+        // echo '<pre>'; print_r($invoice); exit;
         // Load and download PDF
         // return view('invoices.invoice', compact('invoice'));exit;
         $pdf = Pdf::loadView('invoices.invoice', compact('invoice'));
@@ -239,12 +242,12 @@ class InvoiceController extends Controller
     public function getDueInvoices($id)
     {
         $invoices = Invoice::where('tenant_id', $id)
-        ->whereColumn('received_amount', '<', 'total_amount')
-        ->get(['id', 'month', 'total_amount', 'received_amount'])
-        ->map(function ($invoice) {
-            $invoice->month = \Carbon\Carbon::parse($invoice->month)->format('Y-F');
-            return $invoice;
-        });
+            ->whereColumn('received_amount', '<', 'total_amount')
+            ->get(['id', 'month', 'total_amount', 'received_amount'])
+            ->map(function ($invoice) {
+                $invoice->month = \Carbon\Carbon::parse($invoice->month)->format('Y-F');
+                return $invoice;
+            });
         return response()->json($invoices);
     }
     public function addPayment(Request $request, $id)
