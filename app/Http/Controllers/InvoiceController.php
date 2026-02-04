@@ -4,14 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Models\Invoice;
 use App\Models\Tenant;
+use App\Services\InvoiceService;
+use App\Http\Requests\StoreInvoiceRequest;
+use App\Http\Requests\UpdateInvoiceRequest;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\View;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\DB;
 
 class InvoiceController extends Controller
 {
+    protected $invoiceService;
+
+    public function __construct(InvoiceService $invoiceService)
+    {
+        $this->invoiceService = $invoiceService;
+    }
+
     /**
      * Show list of all invoices.
      */
@@ -24,8 +31,10 @@ class InvoiceController extends Controller
             })
             ->orderByDesc('month')
             ->get();
-        $invoices->map(function ($invoice, $index) use ($invoices) {
 
+        // Transformation logic could be moved to resource/service if needed,
+        // but kept here for now as it's view-specific data prep.
+        $invoices->map(function ($invoice, $index) use ($invoices) {
             $previous = $invoices
                 ->where('tenant_id', $invoice->tenant_id)
                 ->where('month', '<', $invoice->month)
@@ -34,11 +43,10 @@ class InvoiceController extends Controller
                 ->first();
 
             $prev_units = $previous?->electricity_units ?? 0;
-
             $invoice->sum_electricity_units = max($invoice->electricity_units - $prev_units, 0);
             return $invoice;
         });
-        // echo '<pre>'; print_r($invoices->toArray()); exit;
+
         return view('invoices.index', compact('invoices'));
     }
 
@@ -48,75 +56,27 @@ class InvoiceController extends Controller
     public function create(Request $request)
     {
         $tenants = Tenant::where('status', 'active')->ofUser()->orderBy('room_no', 'asc')->get();
-        return view('invoices.create', compact('tenants'));
+        return view('invoices.upsert', compact('tenants'));
     }
 
-    public function store(Request $request)
+    public function store(StoreInvoiceRequest $request)
     {
-        $validated = $request->validate([
-            'tenant_id' => 'required|exists:tenants,id',
-            'month' => 'required|date_format:Y-m',
-            'electricity_units' => 'required|numeric',
-            'last_electric_unit' => 'required|numeric',
-            'electricity_charge' => 'required|numeric',
-            'water_charge' => 'required|numeric',
-            'closer' => 'nullable|numeric',
-        ]);
-
-        $tenant = Tenant::findOrFail($validated['tenant_id']);
-
-        // default: rent included
-        $rent = $tenant->rent_amount;
-
-        // only when closing, check advance
-        if (($validated['closer'] ?? 0) == 1 && $tenant->is_advanced == 1) {
-            $rent = 0;
-        }
-
-        $total_amount =
-            $validated['electricity_charge']
-            + $validated['water_charge']
-            + $rent;
-
-        Invoice::create([
-            'tenant_id' => $tenant->id,
-            'month' => $validated['month'],
-            'electricity_units' => $validated['electricity_units'],
-            'electricity_charge' => $validated['electricity_charge'],
-            'water_charge' => $validated['water_charge'],
-            'total_amount' => $total_amount,
-        ]);
-
-        if (($validated['closer'] ?? 0) == 1) {
-            $tenant->update(['status' => 'close']);
-        }
+        $this->invoiceService->createInvoice($request->validated());
 
         return redirect()
             ->route('invoices.index')
             ->with('success', 'Invoice created successfully.');
     }
 
-
     // AJAX endpoint to get last unit
     public function getLastUnits($tenant_id, $month)
     {
-        $tenant = Tenant::find($tenant_id);
-
-        if (!$tenant) {
-            return response()->json(['last_units' => 0]);
-        }
-
-        $lastInvoice = Invoice::where('tenant_id', $tenant_id)
-            ->where('month', '<', $month)
-            ->orderBy('month', 'desc')
-            ->first();
+        $lastUnits = $this->invoiceService->getLastUnits($tenant_id, $month);
 
         return response()->json([
-            'last_units' => $lastInvoice?->electricity_units ?? 0
+            'last_units' => $lastUnits
         ]);
     }
-
-
 
     /**
      * Show a single invoice as PDF.
@@ -132,55 +92,15 @@ class InvoiceController extends Controller
     public function edit(Invoice $invoice)
     {
         $tenants = Tenant::ofUser()->get();
-        // echo '<pre>'; print_r($invoice); exit;
-        return view('invoices.edit', compact('invoice', 'tenants'));
+        return view('invoices.upsert', compact('invoice', 'tenants'));
     }
 
     /**
      * Update invoice.
      */
-    public function update(Request $request, Invoice $invoice)
+    public function update(UpdateInvoiceRequest $request, Invoice $invoice)
     {
-        // echo '<pre>'; print_r($request->all()); exit;
-        $validated = $request->validate([
-            'tenant_id' => 'required|exists:tenants,id',
-            'month' => 'required|date_format:Y-m',
-            'electricity_units' => 'required|numeric',
-            'electricity_charge' => 'required|numeric',
-            'water_charge' => 'required|numeric',
-            'total_amount' => 'required|numeric',
-            'received_amount' => 'required|numeric',
-        ]);
-
-        // Get tenant with rent
-        // $tenant = Tenant::findOrFail($validated['tenant_id']);
-        // $electricRate = Config::get('constants.electric_rate');
-
-        // Get last month's invoice (excluding the one being updated)
-        // $lastInvoice = Invoice::where('tenant_id', $tenant->id)
-        //     ->where('month', '<', $validated['month'])
-        //     ->where('id', '!=', $invoice->id) // Exclude current
-        //     ->where('electricity_units', '>', 0)
-        //     ->orderBy('month', 'desc')
-        //     ->first();
-
-        // $last_units = $lastInvoice?->electricity_units ?? 0;
-
-        // $unit_diff = $validated['electricity_units'] - $last_units;
-        // $unit_diff = max($unit_diff, 0); // prevent negative
-
-        // $electricity_charge = $unit_diff * $electricRate;
-        // $total_amount = $electricity_charge + $validated['water_charge'] + $tenant->rent_amount;
-
-        $invoice->update([
-            'tenant_id' => $validated['tenant_id'],
-            'month' => $validated['month'],
-            'electricity_units' => $validated['electricity_units'],
-            'electricity_charge' => $validated['electricity_charge'],
-            'water_charge' => $validated['water_charge'],
-            'total_amount' => $validated['total_amount'],
-            'received_amount' => $validated['received_amount'],
-        ]);
+        $this->invoiceService->updateInvoice($invoice, $request->validated());
 
         return redirect()->route('invoices.index')->with('success', 'Invoice updated successfully.');
     }
@@ -199,42 +119,9 @@ class InvoiceController extends Controller
      */
     public function download(Invoice $invoice)
     {
-        // echo '<pre>'; print_r($invoice->tenant->start_date); exit;
-        // Current reading from the invoice
-        $currentUnit = (int) $invoice->electricity_units;
-        $invoice->currentUnit = $currentUnit;
-        // Fetch the previous invoice for the same tenant
-        // $lastInvoice = Invoice::where('tenant_id', $invoice->tenant_id)
-        //     ->where('month', '<', $invoice->month)
-        //     ->where('electricity_units', '>', 0)
-        //     ->orderBy('month', 'desc')
-        //     ->first();
+        $invoice = $this->invoiceService->preparePdfData($invoice);
+        $filename = $this->invoiceService->getPdfFilename($invoice);
 
-        // Calculate usage based on stored charge
-        $electricityRate = config('constants.ELECTRIC_RATE', 10); // ₹10 default
-        $electricityCharge = $invoice->electricity_charge;
-
-        // Back-calculate unit difference from the charge
-        // Avoid division by zero
-        $unitDiff = $electricityRate > 0 ? round($electricityCharge / $electricityRate) : 0;
-
-        $previousUnit = $currentUnit - $unitDiff;
-
-        // Append custom display-only fields
-        $invoice->electricity_display = "{$currentUnit} - {$previousUnit} = {$unitDiff}";
-        $invoice->electricity_used_units = $unitDiff;
-        $invoice->electricity_charge = $electricityCharge;
-        $invoice->electricity_rate = $electricityRate;
-
-        // Remove debug
-        $nameSlug = strtolower(str_replace(' ', '_', $invoice->tenant->name));
-        $filenameSlug = "{$nameSlug}_{$invoice->month}.pdf";
-
-
-        $filename = "Invoice_{$filenameSlug}";
-        // echo '<pre>'; print_r($invoice); exit;
-        // Load and download PDF
-        // return view('invoices.invoice', compact('invoice'));exit;
         $pdf = Pdf::loadView('invoices.invoice', compact('invoice'));
         return $pdf->download($filename);
     }
@@ -250,10 +137,10 @@ class InvoiceController extends Controller
             });
         return response()->json($invoices);
     }
+
     public function addPayment(Request $request, $id)
     {
         $invoice = Invoice::findOrFail($id);
-
         $amountToAdd = $request->input('amount', 0);
 
         $invoice->received_amount += $amountToAdd;
@@ -265,6 +152,4 @@ class InvoiceController extends Controller
             'new_due' => $invoice->total_amount - $invoice->received_amount,
         ]);
     }
-
-
 }

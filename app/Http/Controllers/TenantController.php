@@ -3,88 +3,47 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tenant;
+use App\Http\Requests\StoreTenantRequest;
+use App\Http\Requests\UpdateTenantRequest;
+use App\Services\TenantService;
+use Exception;
 use Illuminate\Http\Request;
 
 class TenantController extends Controller
 {
+    protected $tenantService;
+
+    public function __construct(TenantService $tenantService)
+    {
+        $this->tenantService = $tenantService;
+    }
+
     public function index()
     {
         $tenants = Tenant::ofUser()
-        ->with('parentUser')
-        ->orderBy('id', 'desc')   // <-- correct place
-        ->paginate(10);
+            ->with('parentUser')
+            ->orderBy('id', 'desc')
+            ->paginate(10);
         return view('tenants.index', compact('tenants'));
     }
 
     public function create()
     {
-        return view('tenants.create');
+        return view('tenants.upsert');
     }
 
-    public function store(Request $request)
-{
-    $request->validate([
-        'name' => 'required|string|max:255',
-    ]);
-
-    $data = $request->only([
-        'name',
-        'phone',
-        'room_no',
-        'start_date',
-        'rent_amount',
-        'is_water_charge',
-        'parent_id',
-        'water_charge',
-        'is_advanced',
-    ]);
-
-    // Defaults
-    $data['status'] = 'active';
-    $data['is_water_charge'] = $request->has('is_water_charge') ? 1 : 0;
-    $data['is_advanced'] = $request->has('is_advanced') ? 1 : 0;
-
-    // Force water_charge = 0 if not applicable
-    if ($data['is_water_charge'] == 0) {
-        $data['water_charge'] = 0;
-    }
-
-    // Check room availability
-    if (Tenant::room_availability($data['room_no'])) {
-        return redirect()->back()->with('error', 'Room number is already occupied.');
-    }
-
-    // Aadhaar image(s) upload
-    $photoPaths = [];
-
-    if ($request->hasFile('aadhaar_image')) {
-        $files = $request->file('aadhaar_image');
-
-        // Normalize: handle both single & multiple uploads
-        if (!is_array($files)) {
-            $files = [$files];
+    public function store(StoreTenantRequest $request)
+    {
+        try {
+            $this->tenantService->createTenant(
+                $request->validated(),
+                $request->file('aadhaar_image')
+            );
+            return redirect()->route('tenants.index')->with('success', 'Tenant created successfully.');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage())->withInput();
         }
-
-        foreach ($files as $file) {
-            $nameSlug = strtolower(str_replace(' ', '_', $data['name']));
-            $timestamp = time() . rand(100, 999);
-            $extension = $file->getClientOriginalExtension();
-            $filename = "{$nameSlug}_{$timestamp}.{$extension}";
-
-            $path = $file->storeAs('aadhaar_image', $filename, 'public');
-            $photoPaths[] = $path;
-        }
-
-        $data['aadhaar_image'] = json_encode($photoPaths);
     }
-
-    // Save tenant
-    Tenant::create($data);
-
-    return redirect()->route('tenants.index')->with('success', 'Tenant created successfully.');
-}
-
-
 
     public function show(Tenant $tenant)
     {
@@ -94,71 +53,24 @@ class TenantController extends Controller
     public function edit($id)
     {
         $tenant = Tenant::findOrFail($id);
-        return view('tenants.edit', compact('tenant'));
+        return view('tenants.upsert', compact('tenant'));
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateTenantRequest $request, $id)
     {
         $tenant = Tenant::findOrFail($id);
 
-        $data = $request->only([
-            'name',
-            'phone',
-            'room_no',
-            'start_date',
-            'rent_amount',
-            'status',
-            'is_water_charge',
-            'parent_id',
-            'water_charge',
-            'is_advanced',
-        ]);
-
-        // Handle water charge toggle
-        $data['is_water_charge'] = $request->has('is_water_charge') ? 1 : 0;
-        if ($data['is_water_charge'] == 0) {
-            $data['water_charge'] = 0;
+        try {
+            $this->tenantService->updateTenant(
+                $tenant,
+                $request->validated(),
+                $request->file('aadhaar_image')
+            );
+            return redirect()->back()->with('success', 'Tenant updated successfully.');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage())->withInput();
         }
-
-        // Handle advance toggle
-        $data['is_advanced'] = $request->has('is_advanced') ? 1 : 0;
-
-        // Room availability check (skip current tenant id)
-        if (Tenant::room_availability($data['room_no'], $id)) {
-            return redirect()->back()->with('error', 'Room number is already occupied.');
-        }
-
-        // Handle Aadhaar image(s)
-        if ($request->hasFile('aadhaar_image')) {
-            $photoPaths = [];
-            $files = $request->file('aadhaar_image');
-
-            // Normalize to array (supports single & multiple uploads)
-            if (!is_array($files)) {
-                $files = [$files];
-            }
-
-            foreach ($files as $file) {
-                $nameSlug = strtolower(str_replace(' ', '_', $data['name']));
-                $timestamp = time() . rand(100, 999);
-                $extension = $file->getClientOriginalExtension();
-                $filename = "{$nameSlug}_{$timestamp}.{$extension}";
-
-                $path = $file->storeAs('aadhaar_image', $filename, 'public');
-                $photoPaths[] = $path;
-            }
-
-            $data['aadhaar_image'] = json_encode($photoPaths);
-        }
-
-        // Update tenant record
-        $tenant->update($data);
-
-        return redirect()->back()->with('success', 'Tenant updated successfully.');
     }
-
-
-
 
     public function destroy(Tenant $tenant)
     {
@@ -166,3 +78,4 @@ class TenantController extends Controller
         return redirect()->route('tenants.index')->with('success', 'Tenant deleted successfully.');
     }
 }
+
