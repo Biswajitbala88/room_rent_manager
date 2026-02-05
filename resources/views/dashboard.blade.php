@@ -39,6 +39,17 @@
                             <div class="text-2xl font-semibold received-amount">
                                 ₹{{ $totalReceivedAmount ? number_format($totalReceivedAmount, 2) : 0 }}</div>
                         </div>
+                        <!-- Electricity Stats -->
+                        <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4">
+                            <div class="text-sm font-bold">Total Units (Month)</div>
+                            <div class="text-2xl font-semibold electricity-units">{{ $totalElectricityUnits ?? 0 }}
+                            </div>
+                        </div>
+                        <div class="bg-indigo-100 border-l-4 border-indigo-500 text-indigo-700 p-4">
+                            <div class="text-sm font-bold">Total Elec. Cost (Month)</div>
+                            <div class="text-2xl font-semibold electricity-cost">
+                                ₹{{ number_format($totalElectricityAmount ?? 0, 2) }}</div>
+                        </div>
                     </div>
 
                     <!-- Dropdown -->

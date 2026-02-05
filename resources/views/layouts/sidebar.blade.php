@@ -75,5 +75,21 @@
                 Invoices
             </div>
         </a>
+
+        <a class="flex items-center mt-4 py-2 px-6 relative group {{ request()->routeIs('electricity.*') ? 'bg-gray-700 bg-opacity-25 text-gray-100' : 'text-gray-500 hover:bg-gray-700 hover:bg-opacity-25 hover:text-gray-100' }}"
+            href="{{ route('electricity.index') }}">
+            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+
+            <span x-show="desktopSidebarOpen" class="mx-3 transition-opacity duration-300">Electricity</span>
+
+            <!-- Tooltip -->
+            <div x-show="!desktopSidebarOpen"
+                class="absolute left-14 ml-4 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+                Electricity
+            </div>
+        </a>
     </nav>
 </div>
