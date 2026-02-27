@@ -35,7 +35,7 @@ class DashboardController extends Controller
         });
 
         // Electricity Stats for current month
-        $monthlyInvoices = Invoice::where('month', $currentMonth)->get();
+        $monthlyInvoices = Invoice::ofUser()->where('month', $currentMonth)->get();
         $totalElectricityAmount = $monthlyInvoices->sum('electricity_charge');
         $electricRate = config('constants.ELECTRIC_RATE', 10);
         $totalElectricityUnits = $electricRate > 0 ? round($totalElectricityAmount / $electricRate) : 0;
@@ -57,7 +57,7 @@ class DashboardController extends Controller
         $month = $request->input('month'); // format: 2025-07
 
         // Base query with optional month filter
-        $baseQuery = Invoice::query();
+        $baseQuery = Invoice::ofUser();
         if ($month) {
             $baseQuery->where('month', $month);
         }
