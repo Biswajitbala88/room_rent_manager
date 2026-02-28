@@ -55,6 +55,7 @@ Route::middleware('auth')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::resource('tenants', TenantController::class);
     Route::get('/tenants/{id}/due-invoices', [InvoiceController::class, 'getDueInvoices']);
+    Route::get('/tenants/{id}/transactions', [TenantController::class, 'transactions'])->name('tenants.transactions');
 });
 
 

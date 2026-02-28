@@ -77,5 +77,26 @@ class TenantController extends Controller
         $tenant->delete();
         return redirect()->route('tenants.index')->with('success', 'Tenant deleted successfully.');
     }
+
+    public function transactions($id)
+    {
+        $transactions = \App\Models\Transaction::where('tenant_id', $id)
+            ->with('invoice')
+            ->orderBy('payment_date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($transaction) {
+                return [
+                    'id' => $transaction->id,
+                    'amount' => $transaction->amount,
+                    'payment_mode' => $transaction->payment_mode ?? 'Unknown',
+                    'payment_date' => \Carbon\Carbon::parse($transaction->payment_date)->format('M d, Y'),
+                    'created_at' => \Carbon\Carbon::parse($transaction->created_at)->format('M d, Y H:i'),
+                    'invoice_month' => $transaction->invoice ? \Carbon\Carbon::parse($transaction->invoice->month)->format('M Y') : 'N/A'
+                ];
+            });
+
+        return response()->json($transactions);
+    }
 }
 

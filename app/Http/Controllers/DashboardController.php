@@ -28,6 +28,7 @@ class DashboardController extends Controller
         $tenants = $tenants->filter(function ($tenant) {
             $tenant->due_invoice_count = Invoice::where('tenant_id', $tenant->id)
                 ->whereColumn('received_amount', '<', 'total_amount')
+                ->where('is_excluded', false)
                 ->count();
 
             // keep tenant only if due_invoice_count > 0
@@ -70,6 +71,7 @@ class DashboardController extends Controller
         // Calculate values
         $totalPendingInvoices = $pendingInvoicesQuery
             ->whereColumn('received_amount', '<', 'total_amount')
+            ->where('is_excluded', false)
             ->get();
 
         $totalDueAmount = $dueAmountQuery

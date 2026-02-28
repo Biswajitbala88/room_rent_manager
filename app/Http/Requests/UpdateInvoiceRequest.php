@@ -26,9 +26,12 @@ class UpdateInvoiceRequest extends FormRequest
             'month' => 'required|date_format:Y-m',
             'electricity_units' => 'required|numeric',
             'electricity_charge' => 'required|numeric',
-            'water_charge' => 'required|numeric',
+            'water_charge' => 'nullable|numeric',
             'total_amount' => 'required|numeric',
             'received_amount' => 'required|numeric',
+            'payment_mode' => 'nullable|string',
+            'payment_date' => 'nullable|date',
+            'is_excluded' => 'nullable|boolean',
         ];
     }
 }

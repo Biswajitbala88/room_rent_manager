@@ -68,13 +68,13 @@
                     <!-- Last Month Units (Display/Hidden) -->
                     <div class="mb-4">
                          <label class="block font-medium text-sm text-gray-700">Last Month Units</label>
-                        <input type="number" id="last_electric_unit" name="last_electric_unit" class="w-full border rounded px-3 py-2 bg-gray-100" readonly>
+                        <input type="number" id="last_electric_unit" name="last_electric_unit" class="w-full border rounded px-3 py-2 bg-gray-100" >
                     </div>
 
                     <!-- Unit Difference -->
                     <div class="mb-6">
                         <label class="block font-medium text-sm text-gray-700">Unit Difference</label>
-                        <input type="text" id="unit_diff_display" readonly class="w-full border rounded px-3 py-2 bg-gray-100 font-semibold text-lg">
+                        <input type="text" id="unit_diff_display" class="w-full border rounded px-3 py-2 bg-gray-100 font-semibold text-lg">
                     </div>
 
                     <!-- Electricity Charge -->
@@ -85,7 +85,6 @@
                             id="electricity_charge" 
                             name="electricity_charge" 
                             step="1" 
-                            readonly 
                             class="w-full border rounded px-3 py-2 bg-gray-100"
                             value="{{ $invoice->electricity_charge ?? '' }}"
                         >
@@ -119,18 +118,47 @@
                         >
                     </div>
 
-                    @if(isset($invoice))
-                    <!-- Received Amount (Edit only) -->
+                    <!-- Received Amount -->
                     <div class="mb-4">
                         <label class="block font-medium text-sm text-gray-700">Received Amount</label>
                         <input 
                             type="number" 
                             name="received_amount" 
                             id="received_amount"
-                            value="{{ $invoice->received_amount ?? '' }}" 
-                            step="1" 
+                            value="{{ old('received_amount', $invoice->received_amount ?? '') }}" 
+                            step="0.01" 
                             class="w-full border rounded px-3 py-2"
                         >
+                    </div>
+
+                    <div class="mb-4 grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block font-medium text-sm text-gray-700">Payment Mode</label>
+                            <select name="payment_mode" id="payment_mode" class="w-full border rounded px-3 py-2">
+                                <option value="Cash">Cash</option>
+                                <option value="UPI">UPI</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-medium text-sm text-gray-700">Payment Date</label>
+                            <input type="date" name="payment_date" id="payment_date" class="w-full border rounded px-3 py-2" value="{{ date('Y-m-d') }}">
+                        </div>
+                    </div>
+
+                    @if(isset($invoice))
+                    <!-- Exclude Invoice Checkbox -->
+                    <div class="mb-4 flex items-center">
+                        <input type="hidden" name="is_excluded" value="0">
+                        <input 
+                            type="checkbox" 
+                            name="is_excluded" 
+                            id="is_excluded" 
+                            value="1" 
+                            {{ (isset($invoice) && $invoice->is_excluded) ? 'checked' : '' }} 
+                            class="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        >
+                        <label for="is_excluded" class="text-sm font-medium text-gray-700">Exclude from Due Payments</label>
                     </div>
                     @else
                     <!-- Closer Checkbox (Create only) -->
@@ -174,113 +202,151 @@
             let water = 0;
             let isWaterCharge = 0;
 
-            function calculateCharges() {
+            function calculateCharges(isInitialLoad = false) {
+                isInitialLoad = isInitialLoad === true;
                 const $selectedOption = $tenantSelect.find('option:selected');
                 const startMonth = $selectedOption.data('start-month') || '';
                 const invoiceMonth = $monthInput.val();  
                 const startMonthFormatted = startMonth.slice(0, 7);
                 
                 const currentUnits = parseFloat($electricityUnitsInput.val()) || 0;
-                lastUnit = parseFloat($lastUnitInput.val()) || 0;
-
-                const unitDiff = Math.max(currentUnits - lastUnit, 0);
-                $unitDiffDisplay.val(unitDiff);
+                
+                // If it's the initial load, respect the DB value for last unit.
+                if (!isInitialLoad) {
+                    lastUnit = parseFloat($lastUnitInput.val()) || 0;
+                }
 
                 let electricityCharge = 0;
 
                 if (startMonthFormatted === invoiceMonth) {
-                    // Same month → only rent + water, no electricity charge
+                    // Same month → no electricity charge
                     $electricityChargeInput.val("0.00");
+                    $unitDiffDisplay.val("0");
+                    
+                    if (!isInitialLoad) {
+                        $lastUnitInput.val(currentUnits);
+                    } else if ($lastUnitInput.val() === '' || parseFloat($lastUnitInput.val()) === 0) {
+                        $lastUnitInput.val(currentUnits);
+                    }
                 } else {
-                    // Different month → rent + water + electricity
-                    electricityCharge = unitDiff * electricRate;
-                    $electricityChargeInput.val(electricityCharge.toFixed(2));
+                    // Different month → calculate electricity
+                    if (!isInitialLoad) {
+                        const unitDiff = Math.max(currentUnits - lastUnit, 0);
+                        $unitDiffDisplay.val(unitDiff);
+    
+                        electricityCharge = unitDiff * electricRate;
+                        $electricityChargeInput.val(electricityCharge.toFixed(2));
+                    } else {
+                        // On initial load, preserve DB unit diff and charge
+                        const unitDiff = Math.max(currentUnits - parseFloat($lastUnitInput.val() || 0), 0);
+                        $unitDiffDisplay.val(unitDiff);
+                        electricityCharge = parseFloat($electricityChargeInput.val()) || 0;
+                    }
                 }
 
-                const total = rentAmount + electricityCharge + water;
-                $totalAmountDisplay.val(total.toFixed(2));
+                water = parseFloat($waterChargeInput.val()) || 0;
+                
+                if (!isInitialLoad) {
+                    const total = rentAmount + electricityCharge + water;
+                    $totalAmountDisplay.val(total.toFixed(2));
+                }
             }
 
-            function fetchLastUnits() {
+            function fetchLastUnits(isInitialLoad = false) {
                 const tenantId = $tenantSelect.val();
                 const month = $monthInput.val();
                 if (!tenantId || !month) return;
+
+                if (isInitialLoad && window.location.href.includes('/edit')) {
+                    // We don't fetch last units on initial load of edit page, 
+                    // because we already have the correct last unit saved in DB for this invoice!
+                    calculateCharges(true);
+                    return;
+                }
 
                 $.ajax({
                     url: `/tenant-last-units/${tenantId}/${month}`,
                     method: 'GET',
                     success: function(data) {
                         lastUnit = parseFloat(data.last_units) || 0;
-                        $lastUnitInput.val(lastUnit);
-                        calculateCharges();
+                        
+                        const $selectedOption = $tenantSelect.find('option:selected');
+                        const startMonth = $selectedOption.data('start-month') || '';
+                        const startMonthFormatted = startMonth.slice(0, 7);
+
+                        if (startMonthFormatted !== month) {
+                            $lastUnitInput.val(lastUnit);
+                        }
+                        
+                        calculateCharges(false);
                     }
                 });
             }
 
-            function updateWaterCharge() {
+            function updateWaterCharge(isInitialLoad = false) {
                 const $selectedOption = $tenantSelect.find('option:selected');
                 rentAmount = parseFloat($selectedOption.data('rent')) || 0;
                 isWaterCharge = parseInt($selectedOption.data('is-water-charge')) || 0;
                 const waterChargeVal = parseFloat($selectedOption.data('water-charge')) || 0;
 
-                if (isWaterCharge === 1) {
+                const startMonth = $selectedOption.data('start-month') || '';
+                const invoiceMonth = $monthInput.val();  
+                const startMonthFormatted = startMonth.slice(0, 7);
+
+                if (startMonthFormatted === invoiceMonth) {
+                    water = 0;
+                    $waterChargeInput.val('0.00');
+                    $waterChargeInput.addClass('bg-gray-100').prop('readonly', true);
+                } else if (isWaterCharge === 1) {
                     water = waterChargeVal;
-                    // If creating new or if value is empty/0, set it. 
-                    // In edit mode, if user edited water charge, we might want to respect that?
-                    // For now, mirroring original behavior: populate from tenant data
-                    // BUT: if we are Editing, we have a value from DB in PHP. 
-                    // We should only overwrite if it's "0.00" or empty, or if tenant changes.
-                    // Let's rely on PHP to fill initial value, and this function to update on change.
-                   
-                    // Only auto-fill if the input is currently empty or 0 (to not overwrite manual edits if any allowed)
-                    // Or simply force it if read-only logic is strict.
-                    // The original code reset it every time tenant changed.
-                    $waterChargeInput.val(water.toFixed(2));
-                    $waterChargeInput.removeClass('bg-gray-100').prop('readonly', false); // Optional: make editable if logic allows
+                    // On initial edit load, if the invoice already has a water charge, keep it.
+                    // Otherwise, set it from the tenant's default water charge.
+                    if (!isInitialLoad) {
+                        $waterChargeInput.val(water.toFixed(2));
+                    } else if ($waterChargeInput.val() === '' || parseFloat($waterChargeInput.val()) === 0) {
+                        $waterChargeInput.val(water.toFixed(2));
+                    }
+                    $waterChargeInput.removeClass('bg-gray-100').prop('readonly', false);
                 } else {
                     water = 0;
                     $waterChargeInput.val('0.00');
                     $waterChargeInput.addClass('bg-gray-100').prop('readonly', true);
                 }
 
-                calculateCharges();
+                if (!isInitialLoad) {
+                    calculateCharges();
+                } else {
+                    // Just set the water variable, do not recalculate total yet to avoid overwriting DB state early
+                    water = parseFloat($waterChargeInput.val()) || 0;
+                }
             }
             
             // Event Listeners
             $tenantSelect.on('change', function () {
+                $waterChargeInput.val(''); 
                 updateWaterCharge();
                 fetchLastUnits();
             });
 
-            $monthInput.on('change', fetchLastUnits);
-            $electricityUnitsInput.on('input', calculateCharges);
+            $monthInput.on('change', function() {
+                updateWaterCharge();
+                fetchLastUnits();
+            });
+
+            $electricityUnitsInput.on('input', function() { calculateCharges(); });
             $waterChargeInput.on('input', function () {
                 water = parseFloat($(this).val()) || 0;
                 calculateCharges();
             });
             
             // Initial Load Logic
-            // If data is pre-filled (Edit mode or old input), we need to set JS vars
             if ($tenantSelect.val()) {
                 const $selectedOption = $tenantSelect.find('option:selected');
                 rentAmount = parseFloat($selectedOption.data('rent')) || 0;
                 
-                // If it's edit mode, we want to respect the stored water charge/last unit values first?
-                // Actually the fetchLastUnits helps verify data consistency.
-                // We should run everything to sync up.
-                updateWaterCharge();
-                fetchLastUnits();
-                
-                // If edit mode, overriding water charge with stored value might be needed if it differs from default?
-                // The current logic resets it to tenant default. 
-                // Let's trust the 'updateWaterCharge' sets the correct baseline derived from tenant. 
-                // If we want to preserve stored invoice value, we should check invoice water charge.
-                // However, original code reset it on load too.
-                
-                // Correction: In Edit mode, we should NOT reset water charge if it's already set.
-                // But `updateWaterCharge` is called which grabs from Tenant.
-                // Let's modify `updateWaterCharge` slightly to respect existing value on load? 
-                // For simplicity, I'll stick to original behavior which seemed to re-calculate.
+                // Always call these on load to populate water charge correctly since it's not stored in invoices table
+                updateWaterCharge(true);
+                fetchLastUnits(true);
             }
         });
     </script>

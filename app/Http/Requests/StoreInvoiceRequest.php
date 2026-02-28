@@ -27,8 +27,12 @@ class StoreInvoiceRequest extends FormRequest
             'electricity_units' => 'required|numeric',
             'last_electric_unit' => 'required|numeric',
             'electricity_charge' => 'required|numeric',
-            'water_charge' => 'required|numeric',
+            'water_charge' => 'nullable|numeric',
+            'received_amount' => 'nullable|numeric',
+            'payment_mode' => 'nullable|string',
+            'payment_date' => 'nullable|date',
             'closer' => 'nullable|numeric',
+            'is_excluded' => 'nullable|boolean',
         ];
     }
 }

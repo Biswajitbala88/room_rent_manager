@@ -46,7 +46,6 @@ class InvoiceController extends Controller
             $invoice->sum_electricity_units = max($invoice->electricity_units - $prev_units, 0);
             return $invoice;
         });
-
         return view('invoices.index', compact('invoices'));
     }
 
@@ -130,6 +129,7 @@ class InvoiceController extends Controller
     {
         $invoices = Invoice::where('tenant_id', $id)
             ->whereColumn('received_amount', '<', 'total_amount')
+            ->where('is_excluded', false)
             ->get(['id', 'month', 'total_amount', 'received_amount'])
             ->map(function ($invoice) {
                 $invoice->month = \Carbon\Carbon::parse($invoice->month)->format('Y-F');
@@ -142,9 +142,21 @@ class InvoiceController extends Controller
     {
         $invoice = Invoice::findOrFail($id);
         $amountToAdd = $request->input('amount', 0);
+        $paymentMode = $request->input('payment_mode', 'Cash');
+        $paymentDate = $request->input('payment_date', now()->format('Y-m-d'));
 
         $invoice->received_amount += $amountToAdd;
         $invoice->save();
+
+        if ($amountToAdd > 0) {
+            \App\Models\Transaction::create([
+                'tenant_id' => $invoice->tenant_id,
+                'invoice_id' => $invoice->id,
+                'amount' => $amountToAdd,
+                'payment_mode' => $paymentMode,
+                'payment_date' => $paymentDate,
+            ]);
+        }
 
         return response()->json([
             'success' => true,

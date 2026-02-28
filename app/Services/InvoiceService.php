@@ -30,7 +30,7 @@ class InvoiceService
 
             $total_amount =
                 $data['electricity_charge']
-                + $data['water_charge']
+                + ($data['water_charge'] ?? 0)
                 + $rent;
 
             $invoice = Invoice::create([
@@ -38,9 +38,21 @@ class InvoiceService
                 'month' => $data['month'],
                 'electricity_units' => $data['electricity_units'],
                 'electricity_charge' => $data['electricity_charge'],
-                'water_charge' => $data['water_charge'],
+                'water_charge' => $data['water_charge'] ?? 0,
                 'total_amount' => $total_amount,
+                'received_amount' => $data['received_amount'] ?? 0,
+                'is_excluded' => $data['is_excluded'] ?? false,
             ]);
+
+            if (($data['received_amount'] ?? 0) > 0) {
+                \App\Models\Transaction::create([
+                    'tenant_id' => $invoice->tenant_id,
+                    'invoice_id' => $invoice->id,
+                    'amount' => $data['received_amount'],
+                    'payment_mode' => $data['payment_mode'] ?? 'Cash',
+                    'payment_date' => $data['payment_date'] ?? now()->format('Y-m-d'),
+                ]);
+            }
 
             if (($data['closer'] ?? 0) == 1) {
                 $tenant->update(['status' => 'close']);
@@ -59,15 +71,30 @@ class InvoiceService
      */
     public function updateInvoice(Invoice $invoice, array $data): bool
     {
-        return $invoice->update([
+        $oldReceived = $invoice->received_amount;
+        $updated = $invoice->update([
             'tenant_id' => $data['tenant_id'],
             'month' => $data['month'],
             'electricity_units' => $data['electricity_units'],
             'electricity_charge' => $data['electricity_charge'],
-            'water_charge' => $data['water_charge'],
+            'water_charge' => $data['water_charge'] ?? 0,
             'total_amount' => $data['total_amount'],
             'received_amount' => $data['received_amount'],
+            'is_excluded' => $data['is_excluded'] ?? false,
         ]);
+
+        $amountAdded = $data['received_amount'] - $oldReceived;
+        if ($amountAdded > 0) {
+            \App\Models\Transaction::create([
+                'tenant_id' => $invoice->tenant_id,
+                'invoice_id' => $invoice->id,
+                'amount' => $amountAdded,
+                'payment_mode' => $data['payment_mode'] ?? 'Cash',
+                'payment_date' => $data['payment_date'] ?? now()->format('Y-m-d'),
+            ]);
+        }
+
+        return $updated;
     }
 
     /**

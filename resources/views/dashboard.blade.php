@@ -282,6 +282,7 @@
                     if (data.length > 0) {
                         data.forEach(invoice => {
                             let due = invoice.total_amount - invoice.received_amount;
+                            let todayDate = new Date().toISOString().split('T')[0];
                             tbody.innerHTML += `
                                 <tr data-id="${invoice.id}">
                                     <td class="border px-4 py-2">${invoice.id}</td>
@@ -290,9 +291,15 @@
                                     <td class="border px-4 py-2" id="received_${invoice.id}">${invoice.received_amount}</td>
                                     <td class="border px-4 py-2 text-red-500 font-bold" id="due_${invoice.id}">${due}</td>
                                     <td class="border px-4 py-2">
-                                        <input type="number" class="border px-2 py-1 w-24" id="payment_${invoice.id}" placeholder="0">
-                                        <button class="bg-green-500 text-white px-3 py-1 ml-2 rounded" onclick="submitPayment(${invoice.id})">Save</button>
-                                        <a href="/invoices/${invoice.id}/download" class="text-indigo-600 hover:underline ms-4">PDF</a>
+                                        <input type="number" class="border px-2 py-1 w-20 mb-1" id="payment_${invoice.id}" placeholder="Amt">
+                                        <select class="border px-2 py-1 mb-1" id="payment_mode_${invoice.id}">
+                                            <option value="Cash">Cash</option>
+                                            <option value="UPI">UPI</option>
+                                            <option value="Bank Transfer">Bank</option>
+                                        </select>
+                                        <input type="date" class="border px-2 py-1 mb-1" id="payment_date_${invoice.id}" value="${todayDate}">
+                                        <button class="bg-green-500 text-white px-3 py-1 rounded" onclick="submitPayment(${invoice.id})">Save</button>
+                                        <a href="/invoices/${invoice.id}/download" class="text-indigo-600 hover:underline ms-2 block sm:inline mt-1 sm:mt-0">PDF</a>
                                     </td>
                                 </tr>`;
                         });
@@ -306,9 +313,16 @@
 
         function submitPayment(invoiceId) {
             let amount = document.getElementById(`payment_${invoiceId}`).value;
+            let mode = document.getElementById(`payment_mode_${invoiceId}`).value;
+            let date = document.getElementById(`payment_date_${invoiceId}`).value;
 
             if (!amount || isNaN(amount) || amount <= 0) {
                 alert("Please enter a valid amount.");
+                return;
+            }
+
+            if (!mode || !date) {
+                alert("Please select payment mode and date.");
                 return;
             }
 
@@ -318,7 +332,11 @@
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 },
-                body: JSON.stringify({ amount: parseFloat(amount) })
+                body: JSON.stringify({
+                    amount: parseFloat(amount),
+                    payment_mode: mode,
+                    payment_date: date
+                })
             })
                 .then(response => response.json())
                 .then(data => {
