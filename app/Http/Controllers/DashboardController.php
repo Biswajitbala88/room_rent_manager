@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    
+
     public function index()
     {
         // Current month
@@ -28,18 +28,27 @@ class DashboardController extends Controller
         $tenants = $tenants->filter(function ($tenant) {
             $tenant->due_invoice_count = Invoice::where('tenant_id', $tenant->id)
                 ->whereColumn('received_amount', '<', 'total_amount')
+                ->where('is_excluded', false)
                 ->count();
 
             // keep tenant only if due_invoice_count > 0
             return $tenant->due_invoice_count > 0;
         });
 
+        // Electricity Stats for current month
+        $monthlyInvoices = Invoice::ofUser()->where('month', $currentMonth)->get();
+        $totalElectricityAmount = $monthlyInvoices->sum('electricity_charge');
+        $electricRate = config('constants.ELECTRIC_RATE', 10);
+        $totalElectricityUnits = $electricRate > 0 ? round($totalElectricityAmount / $electricRate) : 0;
+
         return view('dashboard', compact(
             'currentMonth',
             'totalPendingInvoices',
             'totalDueAmount',
             'totalReceivedAmount',
-            'tenants'
+            'tenants',
+            'totalElectricityAmount',
+            'totalElectricityUnits'
         ));
     }
 
@@ -49,7 +58,7 @@ class DashboardController extends Controller
         $month = $request->input('month'); // format: 2025-07
 
         // Base query with optional month filter
-        $baseQuery = Invoice::query();
+        $baseQuery = Invoice::ofUser();
         if ($month) {
             $baseQuery->where('month', $month);
         }
@@ -62,6 +71,7 @@ class DashboardController extends Controller
         // Calculate values
         $totalPendingInvoices = $pendingInvoicesQuery
             ->whereColumn('received_amount', '<', 'total_amount')
+            ->where('is_excluded', false)
             ->get();
 
         $totalDueAmount = $dueAmountQuery

@@ -34,8 +34,8 @@
                         <th class="px-4 py-3">Total Amount</th>
                         <th class="px-4 py-3">Received Amount</th>
                         <th class="px-4 py-3">Status</th>
-                        @if ( auth()->user()->user_type == 'SA' )
-                        <th class="px-4 py-3">Owner</th>
+                        @if (auth()->user()->user_type == 'SA')
+                            <th class="px-4 py-3">Owner</th>
                         @endif
                         <th class="px-4 py-3">Actions</th>
                     </tr>
@@ -45,8 +45,9 @@
                         <tr class="border-b text-sm">
                             <td class="px-4 py-2">{{ $key + 1 }}</td>
                             <td class="px-4 py-2">
-                                <span class="inline-block px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">
-                                   Room-{{ $invoice->tenant->room_no }}
+                                <span
+                                    class="inline-block px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">
+                                    Room-{{ $invoice->tenant->room_no }}
                                 </span>
                             </td>
                             <td class="px-4 py-2">{{ $invoice->tenant->name }}</td>
@@ -54,33 +55,46 @@
                             <td class="px-4 py-2">{{ $invoice->electricity_units }}</td>
                             <td class="px-4 py-2">{{ $invoice->sum_electricity_units }}</td>
                             <td class="px-4 py-2">₹{{ number_format($invoice->electricity_charge, 2) }}</td>
-                            <td class="px-4 py-2">₹{{ number_format($invoice->tenant->water_charge, 2) }}</td>
-                            <td class="px-4 py-2 font-semibold text-blue-600">₹{{ number_format($invoice->total_amount, 2) }}</td>
-                            <td class="px-4 py-2 font-semibold text-blue-600">₹{{ number_format($invoice->received_amount, 2) }}</td>
+                            <td class="px-4 py-2">₹{{ number_format($invoice->water_charge, 2) }}</td>
+                            <td class="px-4 py-2 font-semibold text-blue-600">
+                                ₹{{ number_format($invoice->total_amount, 2) }}</td>
+                            <td class="px-4 py-2 font-semibold text-blue-600">
+                                ₹{{ number_format($invoice->received_amount, 2) }}</td>
                             <td class="px-4 py-2">
-                                @if( $invoice->total_amount == $invoice->received_amount)
-                                    <span class="inline-block px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">
+                                @if($invoice->total_amount == $invoice->received_amount)
+                                    <span
+                                        class="inline-block px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">
                                         Fully Paid
                                     </span>
                                 @else
-                                    <span class="inline-block px-2 py-1 text-xs font-semibold text-red-800 bg-red-100 rounded-full text-nowrap">
-                                       ₹{{ number_format($invoice->total_amount - $invoice->received_amount, 2) }} Due
+                                    <span
+                                        class="inline-block px-2 py-1 text-xs font-semibold text-red-800 bg-red-100 rounded-full text-nowrap">
+                                        ₹{{ number_format($invoice->total_amount - $invoice->received_amount, 2) }} Due
                                     </span>
                                 @endif
                             </td>
-                            @if ( auth()->user()->user_type == 'SA' )
-                            <td class="px-4 py-2">
-                                {{ $invoice->tenant->parentUser->name ?? 'N/A' }}
-                            </td>
+                            @if (auth()->user()->user_type == 'SA')
+                                <td class="px-4 py-2">
+                                    {{ $invoice->tenant->parentUser->name ?? 'N/A' }}
+                                </td>
                             @endif
-                            <td class="px-4 py-2 space-x-2">
-                                <a href="{{ route('invoices.edit', $invoice) }}" class="text-blue-600 hover:underline">Edit</a>
-                                <a href="{{ route('invoices.download', $invoice) }}" class="text-indigo-600 hover:underline">PDF</a>
+                            <td class="px-4 py-2 space-x-2 whitespace-nowrap">
+                                <a href="{{ route('invoices.edit', $invoice) }}"
+                                    class="inline-block px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-semibold transition duration-150 ease-in-out">
+                                    Edit
+                                </a>
+                                <a href="{{ route('invoices.download', $invoice) }}"
+                                    class="inline-block px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm font-semibold transition duration-150 ease-in-out">
+                                    PDF
+                                </a>
                                 <form action="{{ route('invoices.destroy', $invoice) }}" method="POST" class="inline"
                                     onsubmit="return confirm('Are you sure?')">
                                     @csrf
                                     @method('DELETE')
-                                    <button class="text-red-600 hover:underline">Delete</button>
+                                    <button
+                                        class="inline-block px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-semibold transition duration-150 ease-in-out">
+                                        Delete
+                                    </button>
                                 </form>
                             </td>
                         </tr>

@@ -1,31 +1,52 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <title>Invoice #{{ $invoice->id }}</title>
     <style>
-        body { font-family: DejaVu Sans, sans-serif; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; }
-        th { background-color: #f2f2f2; text-align: left; }
-p {
-    margin: 5px 0;
-}
-.footer {
-    text-align: center;
-    font-size: 13px;
-    color: #666666;
-}
-.footer hr {
-    margin: 0 0 15px;
-    border: 0;
-    border-bottom: 1px dashed #ccc;
-}
+        body {
+            font-family: DejaVu Sans, sans-serif;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            text-align: left;
+        }
+
+        p {
+            margin: 5px 0;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 13px;
+            color: #666666;
+        }
+
+        .footer hr {
+            margin: 0 0 15px;
+            border: 0;
+            border-bottom: 1px dashed #ccc;
+        }
     </style>
 </head>
+
 <body>
 
-<?php
+    <?php
 // echo '<pre>'; print_r($invoice->tenant); exit;
 
 
@@ -46,24 +67,25 @@ p {
             <td>₹{{ number_format($invoice->tenant->rent_amount, 2) }}</td>
         </tr>
         @if ($invoice->currentUnit > 0)
-        <tr>
-            <td>
-                Electricity Usage: {{ $invoice->electricity_display }} units
-                <br>
-                <small>
-                    Charge = ({{ $invoice->electricity_display }}) × ₹{{ $invoice->electricity_rate }} = ₹{{ number_format($invoice->electricity_charge, 2) }}
-                </small>
-            </td>
-            <td>₹{{ number_format($invoice->electricity_charge, 2) }}</td>
-        </tr>
+            <tr>
+                <td>
+                    Electricity Usage: {{ $invoice->electricity_display }} units
+                    <br>
+                    <small>
+                        Charge = ({{ $invoice->electricity_display }}) × ₹{{ $invoice->electricity_rate }} =
+                        ₹{{ number_format($invoice->electricity_charge, 2) }}
+                    </small>
+                </td>
+                <td>₹{{ number_format($invoice->electricity_charge, 2) }}</td>
+            </tr>
         @endif
 
 
-        @if($invoice->tenant->is_water_charge == 1)
-        <tr>
-            <td>Water Charge</td>
-            <td>₹{{ number_format($invoice->tenant->water_charge, 2) }}</td>
-        </tr>
+        @if($invoice->tenant->is_water_charge == 1 || $invoice->water_charge > 0)
+            <tr>
+                <td>Water Charge</td>
+                <td>₹{{ number_format($invoice->water_charge, 2) }}</td>
+            </tr>
         @endif
         <tr>
             <th style="background: #2980b9; color: #fff;">Total</th>
@@ -80,21 +102,23 @@ p {
     </table>
 
     <p><strong>Status:
-        @if( $invoice->total_amount == $invoice->received_amount)
-            <span style="color: #006622;">
-                Fully Paid
-            </span>
-        @else
-            <span style="color: #cc0000;">
-                Due
-            </span>
-        @endif
-        </strong> 
+            @if($invoice->total_amount == $invoice->received_amount)
+                <span style="color: #006622;">
+                    Fully Paid
+                </span>
+            @else
+                <span style="color: #cc0000;">
+                    Due
+                </span>
+            @endif
+        </strong>
     </p>
     <div class="footer">
-        <br><hr>
+        <br>
+        <hr>
         Thank you for staying with us!<br>
         This is a computer-generated invoice.
     </div>
 </body>
+
 </html>

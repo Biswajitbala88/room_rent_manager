@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between mb-4">
-            <h2 class="text-xl font-semibold text-gray-800">
+            <h2 class="text-xl font-semibold text-gray-800 me-2">
                 {{ __('Dashboard') }}
             </h2>
 
@@ -17,22 +17,38 @@
                 <div class="p-6 text-gray-900">
                     <div class="mb-4">
                         <label class="block text-gray-700 font-bold mb-2">Filter with month</label>
-                        <input type="month" name="filter_month" id="filter_month" required class="w-full border rounded px-3 py-2">
+                        <input type="month" name="filter_month" id="filter_month" required
+                            class="w-full border rounded px-3 py-2">
                     </div>
 
                     <!-- Summary Counters -->
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                         <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4">
                             <div class="text-sm font-bold">Total Pending Invoices</div>
-                            <div class="text-2xl font-semibold pending-count">{{ $totalPendingInvoices ? count($totalPendingInvoices) : 0 }}</div>
+                            <div class="text-2xl font-semibold pending-count">
+                                {{ $totalPendingInvoices ? count($totalPendingInvoices) : 0 }}
+                            </div>
                         </div>
                         <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4">
                             <div class="text-sm font-bold">Total Due Amount (₹)</div>
-                            <div class="text-2xl font-semibold due-amount">₹{{ $totalDueAmount ? number_format($totalDueAmount, 2) : 0 }}</div>
+                            <div class="text-2xl font-semibold due-amount">
+                                ₹{{ $totalDueAmount ? number_format($totalDueAmount, 2) : 0 }}</div>
                         </div>
                         <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4">
                             <div class="text-sm font-bold">Total Received Amount (₹)</div>
-                            <div class="text-2xl font-semibold received-amount">₹{{ $totalReceivedAmount ? number_format($totalReceivedAmount, 2) : 0 }}</div>
+                            <div class="text-2xl font-semibold received-amount">
+                                ₹{{ $totalReceivedAmount ? number_format($totalReceivedAmount, 2) : 0 }}</div>
+                        </div>
+                        <!-- Electricity Stats -->
+                        <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4">
+                            <div class="text-sm font-bold">Total Units (Month)</div>
+                            <div class="text-2xl font-semibold electricity-units">{{ $totalElectricityUnits ?? 0 }}
+                            </div>
+                        </div>
+                        <div class="bg-indigo-100 border-l-4 border-indigo-500 text-indigo-700 p-4">
+                            <div class="text-sm font-bold">Total Elec. Cost (Month)</div>
+                            <div class="text-2xl font-semibold electricity-cost">
+                                ₹{{ number_format($totalElectricityAmount ?? 0, 2) }}</div>
                         </div>
                     </div>
 
@@ -42,14 +58,16 @@
                         <select id="tenant_select" class="w-full border rounded px-3 py-2">
                             <option value="">Select Tenant</option>
                             @foreach ($tenants as $tenant)
-                                <option value="{{ $tenant->id }}">{{ $tenant->name }} (Room: {{ $tenant->room_no }}) Total Due Invoice: {{$tenant->due_invoice_count}}</option>
+                                <option value="{{ $tenant->id }}">{{ $tenant->name }} (Room: {{ $tenant->room_no }}) Total
+                                    Due Invoice: {{$tenant->due_invoice_count}}</option>
                             @endforeach
                         </select>
                     </div>
 
                     <!-- Table for due invoices -->
                     <div id="due_invoices_section">
-                        <table class="table-auto w-full border-collapse border border-gray-300 mt-4 hidden" id="due_invoices_table">
+                        <table class="table-auto w-full border-collapse border border-gray-300 mt-4 hidden"
+                            id="due_invoices_table">
                             <thead class="bg-gray-100">
                                 <tr>
                                     <th class="border px-4 py-2">Invoice ID</th>
@@ -73,7 +91,8 @@
         <!-- Modal Content -->
         <div class="bg-white w-full max-w-md p-6 rounded-lg shadow-lg relative">
             <!-- Close Button -->
-            <button onclick="document.getElementById('invoiceModal').classList.add('hidden')" class="absolute top-2 right-2 text-gray-600 hover:text-black text-2xl">&times;</button>
+            <button onclick="document.getElementById('invoiceModal').classList.add('hidden')"
+                class="absolute top-2 right-2 text-gray-600 hover:text-black text-2xl">&times;</button>
 
             <h3 class="text-lg font-semibold mb-4">Create Invoice</h3>
             <form id="invoice-form" action="{{ route('invoices.store') }}" method="POST">
@@ -85,7 +104,9 @@
                     <select name="tenant_id" id="tenant_id" required class="w-full border rounded px-3 py-2">
                         <option value="">Select Tenant</option>
                         @foreach ($tenants as $tenant)
-                            <option value="{{ $tenant->id }}" data-rent="{{ $tenant->rent_amount }}" data-is-water-charge="{{ $tenant->is_water_charge }}" data-water-charge="{{ $tenant->water_charge }}">
+                            <option value="{{ $tenant->id }}" data-rent="{{ $tenant->rent_amount }}"
+                                data-is-water-charge="{{ $tenant->is_water_charge }}"
+                                data-water-charge="{{ $tenant->water_charge }}">
                                 {{ $tenant->name }} (Room: {{ $tenant->room_no }})
                             </option>
                         @endforeach
@@ -101,27 +122,32 @@
                 <!-- Electricity -->
                 <div class="mb-4">
                     <label class="block font-medium text-sm text-gray-700">Electricity Units (Current)</label>
-                    <input type="number" id="electricity_units" name="electricity_units" step="0.01" required class="w-full border rounded px-3 py-2">
+                    <input type="number" id="electricity_units" name="electricity_units" step="0.01" required
+                        class="w-full border rounded px-3 py-2">
                 </div>
                 <input type="hidden" id="last_electric_unit" name="last_electric_unit">
                 <div class="mb-4">
                     <label class="block font-medium text-sm text-gray-700">Unit Difference</label>
-                    <input type="text" id="unit_diff_display" readonly class="w-full border rounded px-3 py-2 bg-gray-100 font-semibold text-lg">
+                    <input type="text" id="unit_diff_display" readonly
+                        class="w-full border rounded px-3 py-2 bg-gray-100 font-semibold text-lg">
                 </div>
 
                 <div class="mb-4">
                     <label class="block font-medium text-sm text-gray-700">Electricity Charge (₹)</label>
-                    <input type="number" id="electricity_charge" name="electricity_charge" step="0.01" readonly class="w-full border rounded px-3 py-2 bg-gray-100">
+                    <input type="number" id="electricity_charge" name="electricity_charge" step="0.01" readonly
+                        class="w-full border rounded px-3 py-2 bg-gray-100">
                 </div>
 
                 <div class="mb-4">
                     <label class="block font-medium text-sm text-gray-700">Water Charge (₹)</label>
-                    <input type="number" id="water_charge" name="water_charge" step="0.01" readonly class="w-full border rounded px-3 py-2 bg-gray-100">
+                    <input type="number" id="water_charge" name="water_charge" step="0.01" readonly
+                        class="w-full border rounded px-3 py-2 bg-gray-100">
                 </div>
 
                 <div class="mb-6">
                     <label class="block font-medium text-sm text-gray-700">Total Amount (₹)</label>
-                    <input type="text" id="total_amount_display" readonly class="w-full border rounded px-3 py-2 bg-gray-100 font-semibold text-lg">
+                    <input type="text" id="total_amount_display" readonly
+                        class="w-full border rounded px-3 py-2 bg-gray-100 font-semibold text-lg">
                 </div>
 
                 <div class="flex justify-end">
@@ -224,22 +250,22 @@
                 },
                 body: formData,
             })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Invoice created successfully!');
-                    document.getElementById('invoiceModal').classList.add('hidden');
-                    form.reset();
-                    const selectedMonth = document.getElementById('filter_month').value;
-                    loadSummary(selectedMonth);
-                } else {
-                    alert(data.message || 'Error creating invoice.');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Something went wrong.');
-            });
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Invoice created successfully!');
+                        document.getElementById('invoiceModal').classList.add('hidden');
+                        form.reset();
+                        const selectedMonth = document.getElementById('filter_month').value;
+                        loadSummary(selectedMonth);
+                    } else {
+                        alert(data.message || 'Error creating invoice.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Something went wrong.');
+                });
         });
 
         document.getElementById('tenant_select').addEventListener('change', function () {
@@ -256,6 +282,7 @@
                     if (data.length > 0) {
                         data.forEach(invoice => {
                             let due = invoice.total_amount - invoice.received_amount;
+                            let todayDate = new Date().toISOString().split('T')[0];
                             tbody.innerHTML += `
                                 <tr data-id="${invoice.id}">
                                     <td class="border px-4 py-2">${invoice.id}</td>
@@ -264,9 +291,15 @@
                                     <td class="border px-4 py-2" id="received_${invoice.id}">${invoice.received_amount}</td>
                                     <td class="border px-4 py-2 text-red-500 font-bold" id="due_${invoice.id}">${due}</td>
                                     <td class="border px-4 py-2">
-                                        <input type="number" class="border px-2 py-1 w-24" id="payment_${invoice.id}" placeholder="0">
-                                        <button class="bg-green-500 text-white px-3 py-1 ml-2 rounded" onclick="submitPayment(${invoice.id})">Save</button>
-                                        <a href="/invoices/${invoice.id}/download" class="text-indigo-600 hover:underline ms-4">PDF</a>
+                                        <input type="number" class="border px-2 py-1 w-20 mb-1" id="payment_${invoice.id}" placeholder="Amt">
+                                        <select class="border px-2 py-1 mb-1" id="payment_mode_${invoice.id}">
+                                            <option value="Cash">Cash</option>
+                                            <option value="UPI">UPI</option>
+                                            <option value="Bank Transfer">Bank</option>
+                                        </select>
+                                        <input type="date" class="border px-2 py-1 mb-1" id="payment_date_${invoice.id}" value="${todayDate}">
+                                        <button class="bg-green-500 text-white px-3 py-1 rounded" onclick="submitPayment(${invoice.id})">Save</button>
+                                        <a href="/invoices/${invoice.id}/download" class="text-indigo-600 hover:underline ms-2 block sm:inline mt-1 sm:mt-0">PDF</a>
                                     </td>
                                 </tr>`;
                         });
@@ -280,9 +313,16 @@
 
         function submitPayment(invoiceId) {
             let amount = document.getElementById(`payment_${invoiceId}`).value;
+            let mode = document.getElementById(`payment_mode_${invoiceId}`).value;
+            let date = document.getElementById(`payment_date_${invoiceId}`).value;
 
             if (!amount || isNaN(amount) || amount <= 0) {
                 alert("Please enter a valid amount.");
+                return;
+            }
+
+            if (!mode || !date) {
+                alert("Please select payment mode and date.");
                 return;
             }
 
@@ -292,18 +332,22 @@
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 },
-                body: JSON.stringify({ amount: parseFloat(amount) })
+                body: JSON.stringify({
+                    amount: parseFloat(amount),
+                    payment_mode: mode,
+                    payment_date: date
+                })
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    document.getElementById(`received_${invoiceId}`).innerText = data.new_received;
-                    document.getElementById(`due_${invoiceId}`).innerText = data.new_due;
-                    document.getElementById(`payment_${invoiceId}`).value = '';
-                } else {
-                    alert(data.message || "Error updating payment.");
-                }
-            });
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById(`received_${invoiceId}`).innerText = data.new_received;
+                        document.getElementById(`due_${invoiceId}`).innerText = data.new_due;
+                        document.getElementById(`payment_${invoiceId}`).value = '';
+                    } else {
+                        alert(data.message || "Error updating payment.");
+                    }
+                });
         }
 
         function loadSummary(month) {
